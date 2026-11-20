@@ -9,9 +9,9 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
 canvas{display:block;touch-action:none;cursor:grab}
-.hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;font-size:.85rem;pointer-events:none;flex-wrap:wrap}
+.hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;font-size:.8rem;pointer-events:none;flex-wrap:wrap}
 .meter{display:flex;align-items:center;gap:6px}
-.meter .bar{width:90px;height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.meter .bar{width:64px;height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
 .meter .bar div{height:100%;transition:width .3s}
 .overlay{position:fixed;inset:0;display:flex;padding:18px;background:rgba(20,27,46,.92);overflow:auto}
 .panel{max-width:560px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 24px;margin:auto}
@@ -42,6 +42,11 @@ input{font:inherit;font-size:16px;background:#141b2e;color:var(--ink);border:1.5
 .rules{width:100%;border-collapse:collapse;font-size:.88rem;margin:8px 0 14px}.rules th,.rules td{text-align:left;vertical-align:top;padding:7px 8px;border-top:1px solid var(--line)}.rules th{font-weight:700;color:var(--muted);font-size:.8rem}.rules td:first-child{white-space:nowrap;font-weight:700}
 .plus{color:var(--yes)}.minus{color:var(--no)}.en{color:var(--neg)}
 @media(max-width:600px){.rules thead{display:none}.rules tr{display:grid;padding:6px 0;border-top:1px solid var(--line)}.rules td{border:0;padding:2px 0}.rules td[data-l]::before{content:attr(data-l) ": ";color:var(--muted)}}
+.chart{margin:12px 0}.crow{display:grid;grid-template-columns:minmax(0,8.5em) minmax(0,1fr) 2.6em;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.cname{display:flex;flex-direction:column;gap:2px}.cbars{display:grid;grid-template-columns:minmax(0,7.5em) minmax(0,1fr);gap:5px 8px;align-items:center;font-size:.78rem;color:var(--muted)}
+.cbar{height:10px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}.cbar>div{height:100%;border-radius:99px}
+.cscore{font-family:Georgia,serif;font-size:1.5rem;text-align:right}.crow.total{border-top:2px solid var(--ink)}.crow.total .cscore{font-size:1.9rem;color:var(--yes)}
+@media(max-width:600px){.crow{grid-template-columns:minmax(0,1fr) 2.6em}.cbars{grid-column:1/-1;grid-row:2}}
 .stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:.92rem;margin:10px 0}
 .roomcode{font-family:Georgia,serif;font-size:2.6rem;letter-spacing:.18em;margin:.1em 0}
 .seats{display:grid;gap:8px;margin:12px 0}
@@ -55,16 +60,17 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 <canvas id="cv"></canvas>
 <div class="hud" id="hud">
  <div class="meter"><button class="hudbtn" id="exitbtn" title="Exit (Esc)">Exit</button><button class="hudbtn" id="rulesbtn" title="How points and energy work">Rules</button>Season<div class="bar"><div id="se" style="background:#a9b0c4"></div></div></div>
- <div class="meter">Your Energy<div class="bar"><div id="en" style="background:var(--neg)"></div></div><b id="env" style="min-width:2.2em">10</b></div>
- <div class="meter">Your Room<div class="bar"><div id="rm" style="background:var(--yes)"></div></div><b id="rmv" style="min-width:3em">0/26</b></div>
- <div class="meter">Team Work<div class="bar"><div id="wk" style="background:#9fb3ef"></div></div><b id="wkv">0/25</b></div>
- <div class="meter">Team Life <b id="lfv" style="font-family:Georgia,serif;font-size:1.3rem;color:var(--yes)">0</b><div class="tierbox"><span id="tierl">Bare Rock</span><span id="nextl" class="nextl"></span></div></div>
+ <div class="meter">Energy<div class="bar"><div id="en" style="background:var(--neg)"></div></div><b id="env" style="min-width:2.2em">10</b></div>
+ <div class="meter">Room<div class="bar"><div id="rm" style="background:var(--yes)"></div></div><b id="rmv" style="min-width:3em">0/26</b></div>
+ <div class="meter">Work<div class="bar"><div id="wk" style="background:#9fb3ef"></div></div><b id="wkv">0/10</b></div>
+ <div class="meter">Home<div class="bar"><div id="hm" style="background:var(--yes)"></div></div><b id="hmv">0/10</b></div>
+ <div class="meter">Team <b id="tsv" style="font-family:Georgia,serif;font-size:1.3rem;color:var(--yes)">0</b><div class="tierbox"><span id="tierl">Bare Rock</span><span id="nextl" class="nextl"></span></div></div>
 </div>
 <div id="caption" class="caption"></div>
 
 <div class="overlay" id="intro"><div class="panel">
  <h1>Boundary Planet</h1>
- <p><b>The goal:</b> as a team, get the work done and grow as much life (trees and homes) as you can, without burning out.</p>
+ <p><b>The goal:</b> balance work and home. Each player aims for 10 work and 10 home (trees and homes) without burning out. Too much of either leaves the other short.</p>
  <p>Requests fly at a little solar system of three planets. Yours is one of them. <b>Move</b> your planet and <b>spin</b> it so the right side meets each request. Something that bounces off your shield flies away, and it might land on a teammate.</p>
  <div class="legend">
   <div class="sw" style="background:var(--no)"></div><div><b>No.</b> A shield. Bounces a request away. Where it goes next depends on the angle.</div>
@@ -75,13 +81,13 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
   <b>Move</b><span>Drag your planet, or use WASD.</span>
   <b>Spin</b><span>Drag anywhere else in the sky, or use the arrow keys (Q and E work too).</span>
  </div>
- <p class="small muted">Senders: <b>Noise</b> 🔔, <b>Friends</b> ☕ and heavy <b>Boss</b> requests 📅. Everything bounces off a No. Heavy work comes back to someone, so aim it at a teammate who has room. Anything that hits the sun blows up, your planet included.</p>
+ <p class="small muted">Senders: <b>Noise</b> 🔔 to bounce, <b>Friends</b> ☕ who grow your home, everyday <b>Work</b> 📊 to catch, and <b>Extras</b> 📈 to negotiate. Everything bounces off a No. Work comes back to someone, so aim it at a teammate who has room. Anything that hits the sun blows up, your planet included.</p>
  <hr>
  <div class="row"><label class="small" for="nm">Your Name</label><input id="nm" maxlength="16" autocomplete="nickname" placeholder="Your name"></div>
  <div class="row"><button class="btn" id="solo">Play Solo</button><button class="btn ghost" id="create">Create Room</button><button class="btn ghost" id="rules2">How It Works</button></div>
  <div class="row"><input id="code" maxlength="6" placeholder="CODE" autocomplete="off" aria-label="Room code"><button class="btn ghost" id="join">Join Room</button></div>
  <p id="neterr" class="small err"></p>
- <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.8 · One season, about two minutes</p>
+ <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.9 · One season, about two minutes</p>
 </div></div>
 
 <div class="overlay hidden" id="room"><div class="panel">
@@ -100,17 +106,19 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 </div></div>
 <div class="overlay hidden" id="rules"><div class="panel" style="max-width:640px">
  <h2>How Boundary Planet Works</h2>
- <p><b>Two goals.</b> As a team, get <b>25 pieces of Boss work</b> done before the season ends. On your own planet, grow <b>Life</b>: trees and homes. Team Life decides your tier (Sprouting 6, Growing 12, Flourishing 20, Thriving 28). Missing the work goal drops your system one tier.</p>
- <p><b>Energy is your battery.</b> Most yeses use some; bouncing noise and negotiating give a little back, and it refills slowly on its own. Low energy makes you slower. At zero you burn out: solo, the season ends; in a room, you rest for 6 seconds with your shield and dock down.</p>
+ <p><b>Balance work and home.</b> Each player aims for <b>10 work</b> and <b>10 home</b> (trees and homes). Past a goal, more of the same earns nothing, so too much work leaves home short, and too much home leaves work short. Your score is your work plus your home, each counted up to 10; the team score adds everyone together.</p>
+ <p><b>Energy is your battery.</b> Most yeses use some; bouncing noise and negotiating extras give a little back, and it refills slowly. At zero you burn out: solo, the season ends; in a room, you rest for 6 seconds with your shield and dock down.</p>
  <p><b>Room.</b> Your planet has 26 spaces. When it's full, a new yes crushes your oldest trees and homes.</p>
  <table class="rules"><thead><tr><th>Request</th><th>No (shield)</th><th>Negotiate (dock)</th><th>Yes (open ground)</th></tr></thead><tbody>
- <tr><td>Noise 🔔</td><td data-l="No">Bounces away. <span class="en">+0.3 energy</span>.</td><td data-l="Negotiate">Hangs around until you deal with it.</td><td data-l="Yes">Clutter: 1 space for 30 seconds, <span class="en">−0.5 energy</span>.</td></tr>
- <tr><td>Friend ☕</td><td data-l="No">Bounces off and asks a teammate next. Leaves only when all three planets have said No.</td><td data-l="Negotiate"><span class="en">+0.5 energy</span> now. Comes back later as a home: <span class="plus">+1 life</span>, 1 space.</td><td data-l="Yes">A tree: <span class="plus">+1 life</span>, 1 space, <span class="en">−0.5 energy</span>. Once it grows: <span class="en">+1.5 energy</span>.</td></tr>
- <tr><td>Boss 📅</td><td data-l="No">Bounces, but heavy work comes back to someone. Three in a row cracks your shield for 5 seconds.</td><td data-l="Negotiate"><span class="en">+0.5 energy</span> now. Comes back later as an office: <span class="plus">+1 work done</span>, <span class="en">−1 energy</span>, 2 spaces for 25 seconds.</td><td data-l="Yes">A tower right away: <span class="plus">+1 work done</span>, <span class="en">−3 energy</span>, 4 spaces for 40 seconds.</td></tr>
+ <tr><td>Noise 🔔</td><td data-l="No">Bounces away. <span class="en">+0.3 energy</span>.</td><td data-l="Negotiate">You can't negotiate with noise; it just bounces.</td><td data-l="Yes">Clutter: 1 space for 30 seconds, <span class="en">−0.5 energy</span>.</td></tr>
+ <tr><td>Friend ☕</td><td data-l="No">Bounces off and asks a teammate next. Leaves only when all three planets have said No.</td><td data-l="Negotiate">Bounces off and comes back to you later. Catch it on open ground: a home, <span class="plus">+1 home</span>.</td><td data-l="Yes">A tree: <span class="plus">+1 home</span>, <span class="en">−0.5 energy</span>. Once it grows: <span class="en">+1.5 energy</span>.</td></tr>
+ <tr><td>Work 📊</td><td data-l="No">Bounces, and comes back to someone. Aim it at a teammate who needs work.</td><td data-l="Negotiate">Comes back later, but real work doesn't get lighter.</td><td data-l="Yes">The right call. <span class="plus">+1 work</span>, <span class="en">−1.5 energy</span>, 2 spaces for 25 seconds.</td></tr>
+ <tr><td>Extra 📈</td><td data-l="No">Bounces, and comes back to someone. Three heavy hits in a row crack your shield.</td><td data-l="Negotiate">The right call. <span class="en">+0.5 energy</span> now; it comes back to you. Catch it on open ground: <span class="plus">+1 work</span>, <span class="en">−1 energy</span>, 2 spaces.</td><td data-l="Yes">The whole thing at once: <span class="plus">+1 work</span>, <span class="en">−3 energy</span>, 4 spaces for 40 seconds.</td></tr>
  </tbody></table>
- <p class="small"><b>Negotiated requests</b> keep their size and float near you at their own pace. After a few seconds they come back down: meet them with open ground to land them. Meet them with your dock and they wait longer; meet them with your shield and they bounce away. If you never deal with them, they keep floating.</p>
- <p class="small"><b>Hand-offs.</b> Boss work you bounce still counts for the team when a teammate catches it. If they were tired (under 5 energy), it costs them an extra 1.5.</p>
+ <p class="small"><b>Negotiated requests</b> wear a gold ring and only come back to you. Catch them on open ground to land them. Meet them with your dock and they bounce back out again; meet them with your shield and the deal is off.</p>
+ <p class="small"><b>Hand-offs.</b> Work you bounce counts for whoever catches it. If they were tired (under 5 energy), it costs them an extra 1.5.</p>
  <p class="small"><b>The sun.</b> Its gravity pulls on noise and work you bounce, and your aim line curves to show it. Anything that hits the sun blows up, including your planet. Fly into it and you're out for the season.</p>
+ <p class="small"><b>Team tiers.</b> Sprouting 15, Growing 30, Flourishing 42, Thriving 52, out of 60.</p>
  <button class="btn" id="rclose">Got It</button>
 </div></div>
 <div class="overlay hidden" id="end"><div class="panel" id="endpanel"></div></div>
@@ -143,14 +151,15 @@ const CAP=26,COST={tree:1,house:1,office:2,tower:4,clutter:1},LIFE={office:25,to
 const GM=()=>1.5e6*Math.pow(Math.min(W,H)/780,3);
 function gravity(o,dt){const dx=sx-o.x,dy=sy-o.y,d2=Math.max(dx*dx+dy*dy,900),d=Math.sqrt(d2),a=GM()/d2;o.vx+=dx/d*a*dt;o.vy+=dy/d*a*dt}
 const used=p=>p.feats.reduce((a,f)=>a+(COST[f.type]||1),0);
-const KN=['noise','friend','boss'],STN=['in','parked','out','orbit'];
+const KN=['noise','friend','work','extra'],HEAVY=k=>k==='work'||k==='extra',STN=['in','parked','out','orbit'];
 const KINDS={
  noise:{r:10,speed:80,labels:[['Ping','🔔'],['Free webinar!','📣'],['New notification','📱'],['Quick q?','❓'],['Sale ends today','🏷️'],['Reply-all','📧'],['Did you see this?','👀']]},
  friend:{r:13,speed:44,labels:[['Coffee?','☕'],['Help me move?','📦'],['Birthday dinner','🎂'],['Long walk?','🚶'],['Can we talk?','💬'],['Game night','🎲']]},
- boss:{r:17,speed:50,labels:[['New deadline','📅'],['Extra project','📁'],['Urgent client','🚨'],['Weekend shift','🗓️'],['Scope creep','📈']]}};
+ work:{r:15,speed:48,labels:[['Monthly report','📊'],['Client meeting','🤝'],['Team project','🧩'],['Send invoices','🧾'],['Quarterly plan','🗂️'],['Ship the update','🚀']]},
+ extra:{r:17,speed:52,labels:[['Scope creep','📈'],['Extra shift','🗓️'],['Extra project','📁'],['Urgent client','🚨'],['Last-minute deadline','⏰']]}};
 const POLICY={
- steady:(p,k)=>k==='noise'?'no':k==='friend'?(p.energy>3&&used(p)<CAP?'yes':'neg'):(p.energy>6&&used(p)<CAP-2?'neg':'no'),
- eager:(p,k)=>k==='noise'?'no':k==='friend'?'yes':(p.energy>5?'yes':'neg')};
+ steady:(p,k)=>k==='noise'?'no':k==='friend'?(p.energy>3&&used(p)<CAP?'yes':'neg'):k==='work'?(p.energy>2.5&&used(p)<CAP-2?'yes':'neg'):(p.energy>3?'neg':'no'),
+ eager:(p,k)=>k==='noise'?'no':k==='friend'?'yes':k==='work'?'yes':(p.energy>5?'yes':'neg')};
 // Three seats. A seat nobody sits in is played by the computer.
 const SEATS=[{col:'#8fa27a',col2:'#3c4a3a',ai:'Fern',policy:'steady',skill:0.85,dot:'#8fa27a'},
  {col:'#88a9c2',col2:'#2f4459',ai:'Juno',policy:'steady',skill:0.8,dot:'#88a9c2'},
@@ -161,7 +170,7 @@ function mkPlanet(slot,seat){
  const S=SEATS[slot],h=homes()[slot];
  return {slot,name:seat.name||S.ai,human:!!seat.human,remote:!!seat.remote,hx:h[0],hy:h[1],x:h[0]*W,y:h[1]*H,tx:h[0]*W,ty:h[1]*H,
   rot:slot===0?-Math.PI/2:Math.random()*TAU,energy:10,feats:[],fv:0,shieldDown:0,cracks:0,rest:0,col:S.col,col2:S.col2,policy:S.policy,skill:S.skill,
-  phase:Math.random()*9,burnouts:0,recent:[],ptsBy:{},log:{no:0,neg:0,bare:0,handGood:0,handStrained:0,passedNoise:0,sunned:0,crushed:0,work:0}};
+  phase:Math.random()*9,burnouts:0,work:0,recent:[],log:{no:0,neg:0,bare:0,handGood:0,handStrained:0,passedNoise:0,sunned:0,crushed:0,work:0}};
 }
 // roster: one entry per seat {name,human,remote}; me: the seat this browser controls
 function newGame(roster,me){
@@ -188,7 +197,7 @@ function pickAngle(tgt,r){
  tgt.recent=[best].concat(tgt.recent).slice(0,3);return best;
 }
 function spawn(){
- const prog=G.t/G.dur,r=Math.random(),kind=r<0.48?'noise':r<0.74?'friend':'boss',k=KINDS[kind];
+ const prog=G.t/G.dur,r=Math.random(),kind=r<0.44?'noise':r<0.70?'friend':r<0.87?'work':'extra',k=KINDS[kind];
  // people get a little more traffic than computer teammates
  const wts=G.planets.map(p=>p.dead?0:p.human?1.25:1),tot=wts.reduce((a,b)=>a+b,0);let q=Math.random()*tot,tgt=G.planets[0];
  for(let i=0;i<wts.length;i++){if(q<wts[i]){tgt=G.planets[i];break}q-=wts[i]}
@@ -206,13 +215,17 @@ function announce(text,col){caption(text,col);if(MODE==='host')G.ev.push(['c',te
 function burst(x,y,col,n,spd,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['b',r1(x),r1(y),col,n,spd]);for(let i=0;i<n;i++){const a=Math.random()*TAU,v=(spd||60)*(0.4+Math.random());G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:0.7+Math.random()*0.5,col,size:1.5+Math.random()*2.5})}}
 function floatText(x,y,text,col,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['f',r1(x),r1(y),text,col]);G.floats.push({x,y,text,col,life:0.9})}
 function ring(local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['r']);for(const p of G.planets)for(let k=0;k<24;k++){const a=k/24*TAU;burst(p.x+Math.cos(a)*(R+6),p.y+Math.sin(a)*(R+6),'#a8d5a2',1,110,true)}}
-// ---- what you're playing for: the team's Work Done, and Life (trees and homes) on every planet ----
-const WORK_GOAL=25,LIFE_TIERS=[[0,'Bare Rock'],[6,'Sprouting'],[12,'Growing'],[20,'Flourishing'],[28,'Thriving']];
-const lifeOf=p=>p.dead?0:p.feats.filter(f=>f.type==='tree'||f.type==='house').length;
-const teamLife=()=>G.planets.reduce((a,p)=>a+lifeOf(p),0);
-function tierIdx(life,workMet){let i=0;LIFE_TIERS.forEach((t,j)=>{if(life>=t[0])i=j});return workMet?i:Math.max(0,i-1)}
+// ---- what you're playing for: every player balances Work and Home (trees and homes) ----
+// Past a goal, more of the same earns nothing: too much work and home falls short, and the other way round.
+const GOAL=10,TEAM_TIERS=[[0,'Bare Rock'],[15,'Sprouting'],[30,'Growing'],[42,'Flourishing'],[52,'Thriving']];
+const homeOf=p=>p.dead?0:p.feats.filter(f=>f.type==='tree'||f.type==='house').length;
+const workOf=p=>p.work||0;
+const scoreOf=p=>Math.min(GOAL,workOf(p))+Math.min(GOAL,homeOf(p));
+const teamScore=()=>G.planets.reduce((a,p)=>a+scoreOf(p),0);
+function tierIdx(v){let i=0;TEAM_TIERS.forEach((t,j)=>{if(v>=t[0])i=j});return i}
 function popup(p,text,col){const near=SIM?0:G.floats.filter(f=>!f.small&&f.life>0.45&&Math.abs(f.x-p.x)<60&&f.y<p.y).length;floatText(p.x+(Math.random()-0.5)*16,p.y-R-40-near*19,text,col)}
-function workDone(p){G.work++;p.log.work++;popup(p,'+1 work done','#9fb3ef');if(G.work===WORK_GOAL)announce('The team hit its work goal!','#9fb3ef')}
+function workDone(p){p.work=(p.work||0)+1;p.log.work++;popup(p,p.work>GOAL?'+1 work (past goal)':'+1 work','#9fb3ef');if(p.work===GOAL)say(p,`Work goal reached. More work now earns nothing; home needs you.`,'#9fb3ef')}
+function homeAdded(p){const h=homeOf(p);popup(p,h>GOAL?'+1 home (past goal)':'+1 home','#81b29a');if(h===GOAL)say(p,`Home goal reached. More home now earns nothing; work needs you.`,'#81b29a')}
 // Energy changes pop up beside your own planet, so you can see where it goes.
 function energy(p,d){p.energy=Math.min(12,p.energy+d);if(SIM)return;const t=`${d>0?'+':'−'}${Math.abs(d)} energy`,x=p.x+R+52,y=p.y+(Math.random()-0.5)*16;
  if(p===G.me)G.floats.push({x,y,text:t,col:'#f2cc8f',life:1.4,small:true});else if(MODE==='host'&&p.remote)G.ev.push(['g',p.slot,r1(x),r1(y),t])}
@@ -222,76 +235,70 @@ function addFeat(p,worldAng,type,size){
  // No room left: the oldest things get crushed to make space, and their points go with them.
  let crushed=0;
  while(p.feats.length&&used(p)+COST[type]>CAP){const f=p.feats.shift();if(VALUE[f.type]){crushed++;p.log.crushed++}const fa=f.ang+p.rot;burst(p.x+Math.cos(fa)*(R+4),p.y+Math.sin(fa)*(R+4),'#8f8a78',10,60);
-  if(VALUE[f.type])popup(p,'−1 life (crushed)','#e07a5f')}
+  if(VALUE[f.type])popup(p,'−1 home (crushed)','#e07a5f')}
  if(crushed)say(p,'No room left. Your oldest trees and homes got crushed to make space.','#e07a5f');
  p.feats.push({ang:norm(worldAng-p.rot),type,size:size||1,born:G.t,until:LIFE[type]?G.t+LIFE[type]:null});p.fv++;
  burst(p.x+Math.cos(worldAng)*(R+4),p.y+Math.sin(worldAng)*(R+4),FEATCOL[type],type==='tree'?14:8,type==='tree'?70:50)}
 
 // ---- the rules ----
-// A boss request caught by someone other than the planet that bounced it is a hand-off.
+// Work caught by someone other than the planet that bounced it is a hand-off.
 function handoff(p,passer){
  if(p.energy>=5){passer.log.handGood++;say(passer,`Handed off. ${p.name} had room for it.`,'#81b29a');say(p,`${passer.name} handed you some work.`,'#9fb3ef')}
  else{energy(p,-1.5);passer.log.handStrained++;say(passer,`${p.name} was already stretched.`,'#e07a5f');say(p,`${passer.name} passed you work while you were tired.`,'#e07a5f')}
 }
+function bounceOff(it,p,ang,speed){const nx=Math.cos(ang),ny=Math.sin(ang),dot=it.vx*nx+it.vy*ny;let vx=it.vx-2*dot*nx,vy=it.vy-2*dot*ny;if(vx*nx+vy*ny<=0){vx=nx;vy=ny}
+ const s=Math.hypot(vx,vy)||1;it.vx=vx/s*speed;it.vy=vy/s*speed;it.ign=p;it.ignT=0.8}
 function impact(it,p){
- const ang=Math.atan2(it.y-p.y,it.x-p.x),face=faceAt(p,ang),k=it.kind,passer=it.from&&it.from!==p?it.from:null;
+ const ang=Math.atan2(it.y-p.y,it.x-p.x),face=faceAt(p,ang),k=it.kind,sp=Math.hypot(it.vx,it.vy);
+ // something you negotiated, coming back to you
+ if(it.owner===p){p.log[face]++;
+  if(face==='bare'){landNegotiated(it,p,ang);return}
+  if(face==='neg'){bounceOff(it,p,ang,Math.max(50,sp*0.8));it.walls=true;it.seekT=2.5;say(p,'Pushed it back again. It keeps coming back until you catch it on open ground.','#f2cc8f');return}
+  it.owner=null;p.log.no--; // a No cancels the deal; handled as a normal No below
+ }
+ const passer=it.from&&it.from!==p?it.from:null;
  p.log[face]++;
  if(face==='no'){
-  const nx=Math.cos(ang),ny=Math.sin(ang),dot=it.vx*nx+it.vy*ny;
-  let vx=it.vx-2*dot*nx,vy=it.vy-2*dot*ny;if(vx*nx+vy*ny<=0){const s=Math.hypot(it.vx,it.vy);vx=nx*s;vy=ny*s}
-  const s=Math.hypot(vx,vy)||1;it.from=p;it.ign=p;it.ignT=0.8;
-  if(k==='noise'){it.vx=vx*1.3;it.vy=vy*1.3;it.ignT=99;energy(p,0.3);say(p,'Bounced. Saying No to noise saves you energy.','#e07a5f')}
+  it.from=p;
+  if(k==='noise'){bounceOff(it,p,ang,sp*1.3);it.ignT=99;energy(p,0.3);say(p,'Bounced. Saying No to noise saves you energy.','#e07a5f')}
   else if(k==='friend'){
    if(!it.noSet.includes(p.slot))it.noSet.push(p.slot);
-   const sp=Math.max(45,Math.hypot(it.vx,it.vy));it.vx=vx/s*sp;it.vy=vy/s*sp;it.walls=true;it.seekT=0.9;
+   bounceOff(it,p,ang,Math.max(45,sp));it.walls=true;it.seekT=0.9;
    if(it.noSet.length>=G.planets.length){it.state='out';it.fade=1;it.walls=false;announce(`Everyone said No to "${it.label}". They'll find help somewhere else.`,'#f08aa0')}
    else say(p,"Bounced a friend. They'll ask a teammate next.",'#f08aa0')}
-  else{const v0=0.16*Math.min(W,H);it.vx=vx/s*v0;it.vy=vy/s*v0;it.walls=true;it.seekT=3.5;it.seeking=false;p.cracks++;
+  else{bounceOff(it,p,ang,0.16*Math.min(W,H));it.walls=true;it.seekT=3.5;it.seeking=false;p.cracks++;
    if(p.cracks>=3){p.shieldDown=5;p.cracks=0;say(p,'Shield cracked. Give it a moment.','#e07a5f')}
-   else say(p,"Bounced. Heavy work comes back to someone, so aim it at a teammate with room.",'#9fb3ef')}
+   else say(p,k==='work'?'Bounced real work. It comes back to someone, so aim it at a teammate with room.':'Bounced an extra. It comes back to someone. Negotiating shrinks it instead.','#9fb3ef')}
   return;
  }
- if(face==='neg'){if(k==='boss'&&passer)handoff(p,passer);park(it,p,ang);return}
+ if(face==='neg'){
+  if(k==='noise'){it.from=p;bounceOff(it,p,ang,sp*1.2);it.ignT=99;say(p,"There's no negotiating with noise. It just bounced.",'#c9c3a0');return}
+  if(HEAVY(k)&&passer)handoff(p,passer);
+  const first=!it.negotiated;Object.assign(it,{negotiated:true,owner:p,from:p,walls:true,seekT:3,seeking:false});
+  bounceOff(it,p,ang,Math.max(55,sp*0.8));
+  if(first&&k==='extra')energy(p,0.5);
+  say(p,k==='extra'?'Negotiated: smaller, and later. It will come back; catch it on open ground.':k==='friend'?'Negotiated a visit for later. It will come back; catch it on open ground.':"Pushed back. Real work doesn't get lighter, but it will come back; catch it on open ground.",'#f2cc8f');
+  return;
+ }
  it.state='gone';
- if(k==='friend'){energy(p,-0.5);addFeat(p,ang,'tree',1.15);popup(p,'+1 life','#81b29a');say(p,'Accepted. A tree will grow.','#81b29a')}
- else if(k==='boss'){if(passer)handoff(p,passer);energy(p,-3);addFeat(p,ang,'tower',1.2);workDone(p);say(p,'Accepted, all of it. Work done, but that was heavy.','#9fb3ef')}
+ if(k==='friend'){energy(p,-0.5);addFeat(p,ang,'tree',1.15);homeAdded(p);say(p,'Accepted. A tree will grow.','#81b29a')}
+ else if(k==='work'){if(passer)handoff(p,passer);energy(p,-1.5);addFeat(p,ang,'office',0.9);workDone(p);say(p,'Work done. That is the job.','#9fb3ef')}
+ else if(k==='extra'){if(passer)handoff(p,passer);energy(p,-3);addFeat(p,ang,'tower',1.2);workDone(p);say(p,'Took the whole extra. Heavy. Negotiating would have made it smaller.','#c3a6f0')}
  else{energy(p,-0.5);addFeat(p,ang,'clutter',0.6);
   if(passer){passer.log.passedNoise++;say(passer,`You bounced noise onto ${p.name}.`,'#c9c3a0');say(p,`${passer.name} bounced noise onto you.`,'#c9c3a0')}
   else say(p,'You let the noise in. It takes up room and drains energy.','#c9c3a0')}
 }
-// Negotiate: the dock holds a request for later. It keeps its size, floats near you,
-// and comes back down after a while. Land it on open ground; it stays until you deal with it.
-function park(it,p,ang){
- const first=!it.negotiated;it.negotiated=true;
- Object.assign(it,{state:'parked',host:p,orbA:ang,rad:R+72,wait:5,from:null,ign:null,walls:false,vx:0,vy:0});
- if(first&&it.kind!=='noise'){energy(p,0.5);say(p,it.kind==='boss'?"Negotiated: later, on your terms. When it comes back, land it on open ground.":"Negotiated a visit for later. When it comes back, land it on open ground.",'#f2cc8f')}
- else if(it.kind==='noise')say(p,'You caught some noise. It will hang around until you deal with it.','#c9c3a0');
-}
-function landParked(it,p,ang){
+// Catching a negotiated request on open ground lands the lighter version.
+function landNegotiated(it,p,ang){
  it.state='gone';
- if(it.kind==='boss'){energy(p,-1);addFeat(p,ang,'office',0.9);workDone(p);say(p,'Landed the negotiated work. Done, and lighter.','#9fb3ef')}
- else if(it.kind==='friend'){addFeat(p,ang,'house',0.9);popup(p,'+1 life','#81b29a');say(p,'The visit happened, on your terms. A home.','#f2cc8f')}
- else{energy(p,-0.5);addFeat(p,ang,'clutter',0.6)}
-}
-function updateParked(it,dt){
- const h=it.host;if(h.dead){it.state='gone';return}
- it.orbA+=dt*0.5;if(it.wait>0)it.wait-=dt;else it.rad=Math.max(R,it.rad-dt*14);
- // it floats at its own pace, so it drifts behind if you move away fast
- const tx=h.x+Math.cos(it.orbA)*it.rad,ty=h.y+Math.sin(it.orbA)*it.rad,dx=tx-it.x,dy=ty-it.y,d=Math.hypot(dx,dy),mv=Math.min(d,90*dt);
- if(d>0.1){it.x+=dx/d*mv;it.y+=dy/d*mv}
- if(it.wait>0||Math.hypot(it.x-h.x,it.y-h.y)>R+12+it.r)return;
- const ang=Math.atan2(it.y-h.y,it.x-h.x),face=faceAt(h,ang);
- if(face==='bare')landParked(it,h,ang);
- else if(face==='neg'){it.wait=5;it.rad=R+72;say(h,'Pushed it back again. It is still waiting for you.','#f2cc8f')}
- else{it.state='in';it.from=h;it.ign=h;it.ignT=0.8;const sp=it.kind==='boss'?0.16*Math.min(W,H):60;it.vx=Math.cos(ang)*sp;it.vy=Math.sin(ang)*sp;
-  if(it.kind!=='noise'){it.walls=true;it.seekT=it.kind==='boss'?3.5:0.9}
-  if(it.kind==='friend'&&!it.noSet.includes(h.slot))it.noSet.push(h.slot);
-  say(h,'Changed your mind and bounced it.','#e07a5f')}
+ if(it.kind==='extra'){energy(p,-1);addFeat(p,ang,'office',0.9);workDone(p);say(p,'Landed the negotiated extra. Done, and lighter.','#9fb3ef')}
+ else if(it.kind==='work'){energy(p,-1.5);addFeat(p,ang,'office',0.9);workDone(p);say(p,'Landed the work you pushed back.','#9fb3ef')}
+ else{addFeat(p,ang,'house',0.9);homeAdded(p);say(p,'The visit happened, on your terms. A home.','#f2cc8f')}
 }
 // Flying into the sun: your planet explodes and you're out for the season.
 function kill(p){
  p.dead=true;p.energy=0;explode(p.x,p.y);explode(p.x+12,p.y-9);burst(p.x,p.y,p.col,30,180);
- for(const it of G.items)if(it.host===p&&it.state==='parked')it.state='gone';
+ for(const it of G.items)if(it.owner===p)it.owner=null;
  if(MODE!=='solo')announce(`${p===G.me?'You':p.name} flew into the sun and ${p===G.me?'are':'is'} out for this season.`,'#ffcf7a');
  if(p===G.me)note("You flew into the sun. You're out for this season.",'#ffcf7a');
  if((MODE==='solo'&&p===G.me)||G.planets.filter(q=>q.human).every(q=>q.dead))finish('sun');
@@ -301,14 +308,14 @@ function aiThink(p,dt){
  if(p.rest>0||p.dead)return;
  let best=null,bt=1e9;
  for(const it of G.items){
-  if(it.state!=='in'||it.ign===p)continue;
+  if(it.state!=='in'||it.ign===p||(it.owner&&it.owner!==p))continue;
   const dx=p.x-it.x,dy=p.y-it.y,d=Math.hypot(dx,dy),v=Math.hypot(it.vx,it.vy)||1,closing=(it.vx*dx+it.vy*dy)/d;
   if(closing<=5)continue;if(Math.abs(it.vx*dy-it.vy*dx)/v>R+26+it.r)continue;
   const t=(d-R)/closing;if(t<bt){bt=t;best=it}
  }
  let want;
- if(best)want=POLICY[p.policy](p,best.kind);
- else{best=G.items.find(it=>it.state==='parked'&&it.host===p&&it.wait<=0);if(!best)return;want=used(p)+2<=CAP?'yes':'neg'}
+ if(!best)return;
+ want=best.owner===p?(used(p)+2<=CAP?'yes':'neg'):POLICY[p.policy](p,best.kind);
  if(want==='no'&&p.shieldDown>0)want='neg';
  const ta=Math.atan2(best.y-p.y,best.x-p.x);
  const fc=want==='no'?0:want==='neg'?Math.PI:(Math.abs(adiff(ta-p.rot,Math.PI/2))<Math.abs(adiff(ta-p.rot,-Math.PI/2))?Math.PI/2:-Math.PI/2);
@@ -352,10 +359,10 @@ function update(dt){
    if(it.ign&&it.ignT!=null){it.ignT-=dt;if(it.ignT<=0)it.ign=null}
    // after a No, friends look for someone who hasn't turned them down; heavy work looks for anyone
    if(it.walls){if(it.seekT>0)it.seekT-=dt;else{
-    if(it.kind==='boss'&&!it.seeking){it.seeking=true;const sp=Math.hypot(it.vx,it.vy)||1,v=KINDS.boss.speed*1.1;it.vx*=v/sp;it.vy*=v/sp}
-    let tg=null,bd=1e9;for(const q of G.planets){if(it.kind==='friend'&&it.noSet.includes(q.slot))continue;const d=Math.hypot(q.x-it.x,q.y-it.y);if(d<bd){bd=d;tg=q}}
+    if(HEAVY(it.kind)&&!it.seeking){it.seeking=true;const sp=Math.hypot(it.vx,it.vy)||1,v=KINDS[it.kind].speed*1.1;it.vx*=v/sp;it.vy*=v/sp}
+    let tg=it.owner||null,bd=it.owner?0:1e9;if(!it.owner)for(const q of G.planets){if(it.kind==='friend'&&it.noSet.includes(q.slot))continue;const d=Math.hypot(q.x-it.x,q.y-it.y);if(d<bd){bd=d;tg=q}}
     if(tg){const a=Math.atan2(tg.y-it.y,tg.x-it.x),sp=Math.hypot(it.vx,it.vy),kk=Math.min(1,dt*1.3);it.vx+=(Math.cos(a)*sp-it.vx)*kk;it.vy+=(Math.sin(a)*sp-it.vy)*kk}}}
-   if(it.from&&it.kind!=='friend')gravity(it,dt);
+   if(it.from&&it.kind!=='friend'&&!it.owner)gravity(it,dt);
    let vx=it.vx,vy=it.vy;
    if(it.kind==='noise'){const n=Math.hypot(it.vx,it.vy)||1,w=Math.sin(it.wob)*30;vx+=-it.vy/n*w;vy+=it.vx/n*w}
    it.x+=vx*dt;it.y+=vy*dt;
@@ -363,16 +370,15 @@ function update(dt){
    // anything that hits the sun blows up
    if(Math.hypot(it.x-sx,it.y-sy)<SUN+it.r){it.state='gone';explode(it.x,it.y);
     if(it.kind==='friend'){announce(`"${it.label}" flew into the sun. Nobody answered it.`,'#f08aa0')}
-    else if(it.from){it.from.log.sunned++;say(it.from,it.kind==='boss'?'Into the sun. That work is gone for good.':'Into the sun. Gone for good.','#ffcf7a')}
+    else if(it.from){it.from.log.sunned++;say(it.from,HEAVY(it.kind)?'Into the sun. That work is gone for good.':'Into the sun. Gone for good.','#ffcf7a')}
     continue}
-   for(const p of G.planets){if(p===it.ign||p.dead)continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
+   for(const p of G.planets){if(p===it.ign||p.dead||(it.owner&&it.owner!==p))continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
   }else if(it.state==='out'){it.x+=it.vx*dt;it.y+=it.vy*dt;it.fade-=dt*0.7;if(it.fade<=0)it.state='gone'}
-  else if(it.state==='parked')updateParked(it,dt);
  }
- G.items=G.items.filter(i=>i.state!=='gone'&&(i.state==='parked'||i.walls||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
+ G.items=G.items.filter(i=>i.state!=='gone'&&(i.walls||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
  fx(dt);
- const ti=tierIdx(teamLife(),true);
- if(ti>G.tierIdx){G.tierIdx=ti;G.tierPulse=1.2;ring();announce(`Your system is ${LIFE_TIERS[ti][1]}!`,'#a8d5a2')}else if(ti<G.tierIdx)G.tierIdx=ti;
+ const ti=tierIdx(teamScore());
+ if(ti>G.tierIdx){G.tierIdx=ti;G.tierPulse=1.2;ring();announce(`Your team is ${TEAM_TIERS[ti][1]}!`,'#a8d5a2')}else if(ti<G.tierIdx)G.tierIdx=ti;
  const me=G.me;
  if(MODE==='solo'&&me.energy<=0){me.energy=0;finish('burnout');return}
  if(me.energy<3.5&&!G.tiredNote){G.tiredNote=true;note('Running on empty. Moving and turning get harder.','#f2cc8f')}
@@ -438,20 +444,20 @@ function drawPlanet(p){
  const ly=y+R+(mine?50:34),label=mine?(MODE==='solo'?'You':`You (${p.name})`):p.human?p.name:`${p.name} (computer)`;
  ctx.font=`${mine?800:700} 12px -apple-system,Segoe UI,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
  ctx.fillStyle=mine?'#f4ede1':'#c9cfdf';ctx.fillText(p.rest>0?`${label} · resting`:label,x,ly);
- if(!mine){const bw=44,u=used(p);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(x-bw/2,ly+9,bw,4);ctx.fillRect(x-bw/2,ly+16,bw,4);ctx.fillStyle=p.energy<3.5?'#e07a5f':'#f2cc8f';ctx.fillRect(x-bw/2,ly+9,bw*clamp(p.energy/12,0,1),4);ctx.fillStyle=u>=CAP-2?'#e07a5f':'#81b29a';ctx.fillRect(x-bw/2,ly+16,bw*clamp(u/CAP,0,1),4)}
+ if(!mine){const bw=44,u=used(p);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(x-bw/2,ly+9,bw,4);ctx.fillRect(x-bw/2,ly+16,bw,4);ctx.fillStyle=p.energy<3.5?'#e07a5f':'#f2cc8f';ctx.fillRect(x-bw/2,ly+9,bw*clamp(p.energy/12,0,1),4);ctx.fillStyle=u>=CAP-2?'#e07a5f':'#81b29a';ctx.fillRect(x-bw/2,ly+16,bw*clamp(u/CAP,0,1),4);ctx.font='600 10px -apple-system,Segoe UI,sans-serif';ctx.fillStyle='#a9b0c4';ctx.fillText(`work ${workOf(p)}/${GOAL} · home ${homeOf(p)}/${GOAL}`,x,ly+30)}
 }
 // Faint aim line: where an incoming request will go if it meets your shield
 function drawAim(){
  const p=G.me;if(p.dead)return;
  for(const it of G.items){
-  if(it.state!=='in'||it.ign===p)continue;
+  if(it.state!=='in'||it.ign===p||it.owner)continue;
   const v=Math.hypot(it.vx,it.vy)||1,dx=it.vx/v,dy=it.vy/v,ox=it.x-p.x,oy=it.y-p.y,Rc=R+12+it.r;
   const b=ox*dx+oy*dy,c=ox*ox+oy*oy-Rc*Rc,disc=b*b-c;if(disc<0)continue;const t=-b-Math.sqrt(disc);if(t<0||t>240)continue;
   const cxp=ox+dx*t,cyp=oy+dy*t,ang=Math.atan2(cyp,cxp);if(faceAt(p,ang)!=='no')continue;
   const nx=Math.cos(ang),ny=Math.sin(ang),dot=dx*nx+dy*ny,rx=dx-2*dot*nx,ry=dy-2*dot*ny,a=1-t/240;
-  ctx.strokeStyle=it.kind==='boss'?`rgba(159,179,239,${0.7*a})`:it.kind==='friend'?`rgba(240,138,160,${0.55*a})`:`rgba(224,122,95,${0.5*a})`;ctx.lineWidth=2;ctx.setLineDash([4,6]);
+  ctx.strokeStyle=HEAVY(it.kind)?`rgba(159,179,239,${0.7*a})`:it.kind==='friend'?`rgba(240,138,160,${0.55*a})`:`rgba(224,122,95,${0.5*a})`;ctx.lineWidth=2;ctx.setLineDash([4,6]);
   // trace where it will go, pulled by the sun (friends aren't)
-  const o={x:p.x+cxp,y:p.y+cyp,vx:0,vy:0},sp=it.kind==='boss'?0.16*Math.min(W,H):it.kind==='noise'?v*1.3:Math.max(45,v);o.vx=rx*sp;o.vy=ry*sp;
+  const o={x:p.x+cxp,y:p.y+cyp,vx:0,vy:0},sp=HEAVY(it.kind)?0.16*Math.min(W,H):it.kind==='noise'?v*1.3:Math.max(45,v);o.vx=rx*sp;o.vy=ry*sp;
   ctx.beginPath();ctx.moveTo(o.x,o.y);let hit=false;const steps=it.kind==='friend'?40:75;
   for(let i=0;i<steps;i++){if(it.kind!=='friend')gravity(o,1/30);o.x+=o.vx/30;o.y+=o.vy/30;ctx.lineTo(o.x,o.y);if(Math.hypot(o.x-sx,o.y-sy)<SUN+it.r){hit=true;break}if(o.x<0||o.x>W||o.y<0||o.y>H)break}
   ctx.stroke();ctx.setLineDash([]);
@@ -474,9 +480,9 @@ function draw(){
  for(const q of G.parts){ctx.globalAlpha=clamp(q.life*1.4,0,1);ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,TAU);ctx.fill()}ctx.globalAlpha=1;
  for(const it of G.items){
   ctx.globalAlpha=it.fade!=null?Math.max(0,it.fade):1;const hr=it.r+5;
-  if(it.kind==='boss'){ctx.save();ctx.translate(it.x,it.y);ctx.rotate(G.t*0.4);ctx.fillStyle='rgba(91,123,214,.35)';ctx.strokeStyle='rgba(120,150,235,.8)';ctx.lineWidth=2;ctx.fillRect(-hr,-hr,hr*2,hr*2);ctx.strokeRect(-hr,-hr,hr*2,hr*2);ctx.restore()}
+  if(HEAVY(it.kind)){const ex=it.kind==='extra';ctx.save();ctx.translate(it.x,it.y);ctx.rotate(G.t*(ex?0.9:0.4));ctx.fillStyle=ex?'rgba(150,110,220,.38)':'rgba(91,123,214,.35)';ctx.strokeStyle=ex?'rgba(185,150,245,.9)':'rgba(120,150,235,.8)';ctx.lineWidth=2;ctx.fillRect(-hr,-hr,hr*2,hr*2);ctx.strokeRect(-hr,-hr,hr*2,hr*2);ctx.restore()}
   else{ctx.fillStyle=it.kind==='friend'?'rgba(240,138,160,.3)':'rgba(217,211,160,.22)';ctx.beginPath();ctx.arc(it.x,it.y,hr,0,TAU);ctx.fill();if(it.kind==='friend'){ctx.strokeStyle='rgba(240,138,160,.7)';ctx.lineWidth=2;ctx.stroke()}}
-  if(it.state==='parked'){ctx.strokeStyle='rgba(242,204,143,.85)';ctx.lineWidth=2;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(it.x,it.y,hr+5,0,TAU);ctx.stroke();ctx.setLineDash([])}
+  if(it.owner){ctx.strokeStyle='rgba(242,204,143,.85)';ctx.lineWidth=2;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(it.x,it.y,hr+5,0,TAU);ctx.stroke();ctx.setLineDash([])}
   ctx.font=`${Math.round(it.r*1.85)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.icon,it.x,it.y+1);
   if(it.state==='in'&&!it.from&&it.label){const dd=Math.min(...G.planets.map(p=>Math.hypot(it.x-p.x,it.y-p.y))),la=clamp((dd-(R+60))/60,0,1);if(la>0){ctx.fillStyle=`rgba(244,237,225,${0.85*la})`;ctx.font='600 11px -apple-system,Segoe UI,sans-serif';ctx.textBaseline='bottom';ctx.fillText(it.label,it.x,it.y-it.r-8)}}
   ctx.globalAlpha=1;
@@ -487,9 +493,9 @@ function draw(){
 function hud(){
  $('en').style.width=Math.max(0,G.me.energy/12*100)+'%';$('env').textContent=Math.max(0,Math.round(G.me.energy*10)/10);{const u=used(G.me);$('rm').style.width=clamp(u/CAP*100,0,100)+'%';$('rm').style.background=u>=CAP-2?'var(--no)':'var(--yes)';$('rmv').textContent=u+'/'+CAP}
  $('se').style.width=Math.min(100,G.t/G.dur*100)+'%';
-{const w=$('wkv').textContent,nw=`${G.work}/${WORK_GOAL}`;if(w!==nw){$('wkv').textContent=nw;$('wk').style.width=clamp(G.work/WORK_GOAL*100,0,100)+'%'}}
- const lf=teamLife(),le=$('lfv');if(le.textContent!=String(lf)){le.textContent=lf;le.animate&&le.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:250})}
- const cur=tierIdx(lf,true),nx=LIFE_TIERS[cur+1];$('tierl').textContent=LIFE_TIERS[cur][1];
+{const me=G.me,w=workOf(me),h=homeOf(me);$('wkv').textContent=`${w}/${GOAL}`;$('wk').style.width=clamp(w/GOAL*100,0,100)+'%';$('hmv').textContent=`${h}/${GOAL}`;$('hm').style.width=clamp(h/GOAL*100,0,100)+'%'}
+ const ts=teamScore(),te=$('tsv');if(te.textContent!=String(ts)){te.textContent=ts;te.animate&&te.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:250})}
+ const cur=tierIdx(ts),nx=TEAM_TIERS[cur+1];$('tierl').textContent=TEAM_TIERS[cur][1];
  $('nextl').textContent=nx?`${nx[1]} at ${nx[0]}`:'Top tier!';
 }
 
@@ -498,10 +504,10 @@ const NET={ws:null,id:null,slot:0,hostId:null,players:[],code:'',snaps:[],sendT:
 const isHost=()=>NET.id&&NET.id===NET.hostId;
 function send(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))}
 function snapshot(){
- const ps=G.planets.map(p=>{const o={x:r1(p.x),y:r1(p.y),r:r3(p.rot),e:r1(p.energy),sd:r1(p.shieldDown),rs:r1(p.rest),d:p.dead?1:0};
+ const ps=G.planets.map(p=>{const o={x:r1(p.x),y:r1(p.y),r:r3(p.rot),e:r1(p.energy),sd:r1(p.shieldDown),rs:r1(p.rest),d:p.dead?1:0,w:p.work||0};
   if(p.fv!==p.sentFv||G.t-(p.sentAt||0)>2){o.f=p.feats.map(f=>[r3(f.ang),f.type,f.size,r1(f.born),f.until?r1(f.until):0]);p.sentFv=p.fv;p.sentAt=G.t}return o});
- const its=G.items.map(i=>[i.id,KN.indexOf(i.kind),i.icon,r1(i.x),r1(i.y),r1(i.vx),r1(i.vy),r1(i.r),STN.indexOf(i.state),i.state==='out'?r1(i.fade):1,i.from?1:0,i.ign?i.ign.slot:-1,i.from?'':i.label]);
- return {t:'state',tm:r1(G.t),wk:G.work,ti:G.tierIdx,ps,its,ev:G.ev.splice(0)};
+ const its=G.items.map(i=>[i.id,KN.indexOf(i.kind),i.icon,r1(i.x),r1(i.y),r1(i.vx),r1(i.vy),r1(i.r),STN.indexOf(i.state),i.state==='out'?r1(i.fade):1,i.from?1:0,i.ign?i.ign.slot:-1,i.from?'':i.label,i.owner?i.owner.slot:-1]);
+ return {t:'state',tm:r1(G.t),ti:G.tierIdx,ps,its,ev:G.ev.splice(0)};
 }
 function applyEvents(ev){
  for(const e of ev){
@@ -516,9 +522,9 @@ function applyEvents(ev){
 }
 function onState(m){
  if(!G||MODE!=='client')return;
- for(let i=0;i<m.ps.length;i++){const q=m.ps[i],p=G.planets[i];if(!p)continue;p.energy=q.e;p.shieldDown=q.sd;p.rest=q.rs;if(q.d&&!p.dead){p.dead=true;if(p===G.me)G.youDied=true}
+ for(let i=0;i<m.ps.length;i++){const q=m.ps[i],p=G.planets[i];if(!p)continue;p.energy=q.e;p.shieldDown=q.sd;p.rest=q.rs;p.work=q.w||0;if(q.d&&!p.dead){p.dead=true;if(p===G.me)G.youDied=true}
   if(q.f)p.feats=q.f.map(a=>({ang:a[0],type:a[1],size:a[2],born:a[3],until:a[4]||null}))}
- G.work=m.wk;G.tierIdx=m.ti;
+ G.tierIdx=m.ti;
  NET.snaps.push({at:performance.now(),m});if(NET.snaps.length>2)NET.snaps.shift();
  applyEvents(m.ev||[]);
  if(G.youDied===true){G.youDied=1;caption("You flew into the sun. You're out for this season. Your team plays on.",'#ffcf7a')}
@@ -532,7 +538,7 @@ function interpolate(){
  b.m.ps.forEach((q,i)=>{const p=G.planets[i];if(!p||p===G.me)return;const o=a.m.ps[i]||q;p.x=lerp(o.x,q.x);p.y=lerp(o.y,q.y);p.rot=o.r+adiff(q.r,o.r)*k});
  const prev=new Map(a.m.its.map(r=>[r[0],r]));
  G.items=b.m.its.map(r=>{const o=prev.get(r[0])||r,st=STN[r[8]];
-  return {id:r[0],kind:KN[r[1]],icon:r[2],x:lerp(o[3],r[3]),y:lerp(o[4],r[4]),vx:r[5],vy:r[6],r:r[7],state:st,fade:st==='out'?r[9]:null,from:r[10]?true:null,ign:r[11]>=0?G.planets[r[11]]:null,label:r[12]}});
+  return {id:r[0],kind:KN[r[1]],icon:r[2],x:lerp(o[3],r[3]),y:lerp(o[4],r[4]),vx:r[5],vy:r[6],r:r[7],state:st,fade:st==='out'?r[9]:null,from:r[10]?true:null,ign:r[11]>=0?G.planets[r[11]]:null,label:r[12],owner:r[13]>=0?G.planets[r[13]]:null}});
 }
 function onInput(m){
  if(MODE!=='host'||!G)return;const p=G.planets[m.slot];if(!p||!p.remote||p.dead)return;
@@ -607,9 +613,8 @@ window.addEventListener('keyup',e=>{if(G)G.keys[e.key]=false});
 
 // ---- end of season ----
 function summarize(why){
- const c=(p,n)=>p.feats.filter(f=>n.includes(f.type)).length;
- return {why,work:G.work,goal:WORK_GOAL,mode:MODE,planets:G.planets.map(p=>({slot:p.slot,name:p.name,human:p.human,dead:!!p.dead,life:lifeOf(p),trees:p.dead?0:c(p,['tree']),homes:p.dead?0:c(p,['house']),clutter:p.dead?0:c(p,['clutter']),burnouts:p.burnouts,log:p.log,
-  waiting:G.items.filter(i=>i.state==='parked'&&i.host===p).length}))};
+ const c=(p,n)=>p.dead?0:p.feats.filter(f=>n.includes(f.type)).length;
+ return {why,goal:GOAL,mode:MODE,planets:G.planets.map(p=>({slot:p.slot,name:p.name,human:p.human,dead:!!p.dead,work:workOf(p),home:homeOf(p),trees:c(p,['tree']),homes:c(p,['house']),burnouts:p.burnouts,log:p.log}))};
 }
 function finish(why){
  G.over=true;if(SIM)return;draw();
@@ -618,34 +623,32 @@ function finish(why){
 }
 function renderEnd(sum,mySlot){
  $('caption').classList.remove('show');
- const me=sum.planets.find(p=>p.slot===mySlot)||sum.planets[0],L=me.log,solo=sum.mode==='solo',burn=sum.planets.reduce((a,p)=>a+p.burnouts,0);
- const life=sum.planets.reduce((a,p)=>a+p.life,0),met=sum.work>=sum.goal,ti=tierIdx(life,met),raw=tierIdx(life,true);
- const desc=p=>{if(p.dead)return `<b>${p.slot===mySlot?'Your planet':esc(p.name)}</b>: flew into the sun.`;const parts=[];if(p.trees)parts.push(`${p.trees} tree${p.trees>1?'s':''}`);if(p.homes)parts.push(`${p.homes} home${p.homes>1?'s':''}`);
-  return `<b>${p.slot===mySlot?'Your planet':esc(p.name)}</b>: ${p.life} life${parts.length?` (${parts.join(', ')})`:''}${p.burnouts?`, burned out ${p.burnouts}×`:''}.`};
- const key=solo?'bp-life-best':'bp-room-life-best';let best=null;try{best=JSON.parse(localStorage.getItem(key))}catch(e){}
- const isBest=met&&(best==null||life>best);if(isBest){try{localStorage.setItem(key,JSON.stringify(life))}catch(e){}}
- let story;
+ const me=sum.planets.find(p=>p.slot===mySlot)||sum.planets[0],L=me.log,solo=sum.mode==='solo',burn=sum.planets.reduce((a,p)=>a+p.burnouts,0),GL=sum.goal;
+ const sc=p=>Math.min(GL,p.work)+Math.min(GL,p.home),ts=sum.planets.reduce((a,p)=>a+sc(p),0),max=sum.planets.length*GL*2,ti=tierIdx(ts);
+ const status=p=>p.dead?'Flew into the sun':p.work>=GL&&p.home>=GL?'Balanced':p.work>=GL?'Home fell short':p.home>=GL?'Work fell short':'Short on both';
+ const lab=(n,v)=>`${n} ${v}/${GL}${v>GL?` <span class="minus">(${v-GL} past goal)</span>`:''}`;
+ const bar=(v,col)=>`<div class="cbar"><div style="width:${Math.min(v,GL)/GL*100}%;background:${col}"></div></div>`;
+ const chart=`<div class="chart">${sum.planets.map(p=>`<div class="crow"><div class="cname"><b>${p.slot===mySlot?'You':esc(p.name)}</b><span class="small ${status(p)==='Balanced'?'plus':'muted'}">${status(p)}</span></div>
+  <div class="cbars"><span>${lab('Work',p.work)}</span>${bar(p.work,'#9fb3ef')}<span>${lab('Home',p.home)}</span>${bar(p.home,'#81b29a')}</div><div class="cscore">${sc(p)}</div></div>`).join('')}
+  <div class="crow total"><div class="cname"><b>Team Score</b><span class="small muted">${TEAM_TIERS[ti][1]}</span></div><div class="cbars"><span>out of ${max}</span><div class="cbar"><div style="width:${ts/max*100}%;background:linear-gradient(90deg,#9fb3ef,#81b29a)"></div></div></div><div class="cscore">${ts}</div></div></div>`;
+ const key=solo?'bp-balance-best':'bp-room-balance-best';let best=null;try{best=JSON.parse(localStorage.getItem(key))}catch(e){}
+ const isBest=best==null||ts>best;if(isBest){try{localStorage.setItem(key,JSON.stringify(ts))}catch(e){}}
+ const st=status(me);let story;
  if(sum.why==='sun')story=me.dead?'You flew your planet into the sun. Moving fast is useful; the sun does not care why you were in a hurry.':'The last person standing flew into the sun.';
- else if(sum.why==='burnout')story='You ran out of energy before the season ended. Too much of the heavy stuff came in whole.';
- else if(!met&&life>=12)story='Lots of life, but the work didn\'t get done. A good system needs both.';
- else if(met&&life<6)story='The work got done, but nothing much grew. The team said yes to the job and no to the life.';
- else if((L.crushed||0)>=3)story='Your planet ran out of room. Extra yeses crushed things that were already growing.';
- else if(me.waiting>=3)story='Several things you negotiated were still circling at the end. A negotiated yes still needs a landing.';
- else if(L.passedNoise>=4)story='Your planet stayed tidy, partly because your noise kept landing on your teammates. Their planets noticed.';
- else if(L.handStrained>=2||burn>=2)story='The system kept going, but someone was always carrying too much. A pass only helps when the catcher has room.';
- else if(L.handGood>=3)story='A real team. You passed work to whoever had room and kept space for what grows.';
- else story=met?'The work got done and things grew. That is the balance.':'Heavy things land better when someone is ready to catch them.';
+ else if(sum.why==='burnout')story='You ran out of energy before the season ended. Too many heavy yeses, too close together.';
+ else if(st==='Balanced')story=L.handGood>=2?'You kept work and home both going, and passed work to teammates who had room. That is the whole game.':'You kept work and home both going. That is the balance.';
+ else if(st==='Home fell short')story='The work got done, but home fell short. Too much work crowds out what grows.';
+ else if(st==='Work fell short')story='Plenty of home, but the work slipped. Saying yes to everything at home leaves no room for the job.';
+ else if((L.crushed||0)>=3)story='Your planet ran out of room, and extra yeses crushed things that were already growing.';
+ else story='Both sides came up short this time. Catch real work with Yes, negotiate the extras, and make room for friends.';
  const head=sum.why==='burnout'?'Out of energy. The season ended early.':sum.why==='stopped'?'The host ended the season early.':sum.why==='sun'?'Into the sun. The season ended.':'The season is over.';
- const result=`<div class="stats"><span>Team work done</span><b class="${met?'plus':'minus'}">${sum.work} of ${sum.goal}${met?'':' (missed)'}</b><span>Team life grown</span><b class="plus">${life}</b><span>Life on your planet</span><b>${me.life}</b><span>Burnouts across the team</span><b>${burn}</b></div>
-  ${met?'':`<p class="small minus">The team missed its work goal${raw!==ti?`, so your system drops from ${LIFE_TIERS[raw][1]} to ${LIFE_TIERS[ti][1]}`:''}.</p>`}`;
  const hostName=(NET.players.find(p=>p.id===NET.hostId)||{}).name||'the host';
  const buttons=solo?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="home">Home</button></div>`
   :isHost()?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="toroom">Back to Room</button><button class="btn ghost" id="leave3">Leave Room</button></div>`
   :`<p class="small muted">Waiting for ${esc(hostName)} to start the next season.</p><button class="btn ghost" id="leave2">Leave Room</button>`;
- $('endpanel').innerHTML=`<p class="small muted">${head}</p><h2>Your System: ${LIFE_TIERS[ti][1]}</h2>${result}<p>${story}${isBest?' Your best season yet.':best!=null&&met?` Your best: ${best} life.`:''}</p>
+ $('endpanel').innerHTML=`<p class="small muted">${head}</p><h2>Your Team: ${TEAM_TIERS[ti][1]}</h2>${chart}<p>${story}${isBest?' Your best team score yet.':` Your best: ${best}.`}</p>
   <p class="small" style="margin-top:12px"><b>How You Played</b></p>
-  <div class="stats"><span>Work you got done</span><b>${L.work||0}</b><span>Negotiated requests still waiting on you</span><b>${me.waiting}</b><span>Bounced off your shield</span><b>${L.no}</b><span>Caught at your dock</span><b>${L.neg}</b><span>Accepted whole</span><b>${L.bare}</b><span>Work handed to a teammate with room</span><b>${L.handGood}</b><span>Work handed to a tired teammate</span><b>${L.handStrained}</b><span>Noise you bounced onto a teammate</span><b>${L.passedNoise}</b><span>Noise you sent into the sun</span><b>${L.sunned}</b><span>Things crushed for room</span><b>${L.crushed||0}</b></div>
-  <p class="small muted">${sum.planets.map(desc).join(' ')}</p>
+  <div class="stats"><span>Bounced off your shield</span><b>${L.no}</b><span>Caught at your dock</span><b>${L.neg}</b><span>Accepted whole</span><b>${L.bare}</b><span>Work handed to a teammate with room</span><b>${L.handGood}</b><span>Work handed to a tired teammate</span><b>${L.handStrained}</b><span>Noise you bounced onto a teammate</span><b>${L.passedNoise}</b><span>Noise you sent into the sun</span><b>${L.sunned}</b><span>Things crushed for room</span><b>${L.crushed||0}</b></div>
   <hr><p class="small"><b>What You Were Practising</b></p>
   <p class="small muted"><b style="color:var(--no)">The Shield</b> is a Clean No: decline early, without a paragraph of apology. Light things bounce. Heavy things don't.</p>
   <p class="small muted"><b style="color:var(--neg)">The Dock</b> is a Negotiated Yes: "Yes, Thursday instead of Tuesday." You name your capacity, and it comes back when you are ready, lighter.</p>
