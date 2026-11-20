@@ -87,7 +87,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
  <div class="row"><button class="btn" id="solo">Play Solo</button><button class="btn ghost" id="create">Create Room</button><button class="btn ghost" id="rules2">How It Works</button></div>
  <div class="row"><input id="code" maxlength="6" placeholder="CODE" autocomplete="off" aria-label="Room code"><button class="btn ghost" id="join">Join Room</button></div>
  <p id="neterr" class="small err"></p>
- <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.9 · One season, about two minutes</p>
+ <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.10 · One season, about two minutes</p>
 </div></div>
 
 <div class="overlay hidden" id="room"><div class="panel">
@@ -111,11 +111,11 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
  <p><b>Room.</b> Your planet has 26 spaces. When it's full, a new yes crushes your oldest trees and homes.</p>
  <table class="rules"><thead><tr><th>Request</th><th>No (shield)</th><th>Negotiate (dock)</th><th>Yes (open ground)</th></tr></thead><tbody>
  <tr><td>Noise 🔔</td><td data-l="No">Bounces away. <span class="en">+0.3 energy</span>.</td><td data-l="Negotiate">You can't negotiate with noise; it just bounces.</td><td data-l="Yes">Clutter: 1 space for 30 seconds, <span class="en">−0.5 energy</span>.</td></tr>
- <tr><td>Friend ☕</td><td data-l="No">Bounces off and asks a teammate next. Leaves only when all three planets have said No.</td><td data-l="Negotiate">Bounces off and comes back to you later. Catch it on open ground: a home, <span class="plus">+1 home</span>.</td><td data-l="Yes">A tree: <span class="plus">+1 home</span>, <span class="en">−0.5 energy</span>. Once it grows: <span class="en">+1.5 energy</span>.</td></tr>
- <tr><td>Work 📊</td><td data-l="No">Bounces, and comes back to someone. Aim it at a teammate who needs work.</td><td data-l="Negotiate">Comes back later, but real work doesn't get lighter.</td><td data-l="Yes">The right call. <span class="plus">+1 work</span>, <span class="en">−1.5 energy</span>, 2 spaces for 25 seconds.</td></tr>
- <tr><td>Extra 📈</td><td data-l="No">Bounces, and comes back to someone. Three heavy hits in a row crack your shield.</td><td data-l="Negotiate">The right call. <span class="en">+0.5 energy</span> now; it comes back to you. Catch it on open ground: <span class="plus">+1 work</span>, <span class="en">−1 energy</span>, 2 spaces.</td><td data-l="Yes">The whole thing at once: <span class="plus">+1 work</span>, <span class="en">−3 energy</span>, 4 spaces for 40 seconds.</td></tr>
+ <tr><td>Friend ☕</td><td data-l="No">Bounces off and asks a teammate next. Leaves only when all three planets have said No.</td><td data-l="Negotiate">Heads to a teammate instead. Whoever catches it on open ground gets a home, <span class="plus">+1 home</span>.</td><td data-l="Yes">A tree: <span class="plus">+1 home</span>, <span class="en">−0.5 energy</span>. Once it grows: <span class="en">+1.5 energy</span>.</td></tr>
+ <tr><td>Work 📊</td><td data-l="No">Bounces, and comes back to someone. Aim it at a teammate who needs work.</td><td data-l="Negotiate">Passes it to a teammate, but real work doesn't get lighter.</td><td data-l="Yes">The right call. <span class="plus">+1 work</span>, <span class="en">−1.5 energy</span>, 2 spaces for 25 seconds.</td></tr>
+ <tr><td>Extra 📈</td><td data-l="No">Bounces, and comes back to someone. Three heavy hits in a row crack your shield.</td><td data-l="Negotiate">The right call. <span class="en">+0.5 energy</span> now, and it heads to a teammate, lighter. Whoever catches it on open ground: <span class="plus">+1 work</span>, <span class="en">−1 energy</span>, 2 spaces.</td><td data-l="Yes">The whole thing at once: <span class="plus">+1 work</span>, <span class="en">−3 energy</span>, 4 spaces for 40 seconds.</td></tr>
  </tbody></table>
- <p class="small"><b>Negotiated requests</b> wear a gold ring and only come back to you. Catch them on open ground to land them. Meet them with your dock and they bounce back out again; meet them with your shield and the deal is off.</p>
+ <p class="small"><b>Negotiate is a pass.</b> A negotiated request wears a gold ring and bounces toward a teammate who hasn't negotiated it yet. Anyone can catch it on open ground, including you. If all three players negotiate it, it spirals into the sun and nobody gets to do anything with it. Meet it with your shield and the deal is off.</p>
  <p class="small"><b>Hand-offs.</b> Work you bounce counts for whoever catches it. If they were tired (under 5 energy), it costs them an extra 1.5.</p>
  <p class="small"><b>The sun.</b> Its gravity pulls on noise and work you bounce, and your aim line curves to show it. Anything that hits the sun blows up, including your planet. Fly into it and you're out for the season.</p>
  <p class="small"><b>Team tiers.</b> Sprouting 15, Growing 30, Flourishing 42, Thriving 52, out of 60.</p>
@@ -203,7 +203,7 @@ function spawn(){
  for(let i=0;i<wts.length;i++){if(q<wts[i]){tgt=G.planets[i];break}q-=wts[i]}
  const rr=k.r*IS*0.85,a=pickAngle(tgt,rr),D=edgeDist(tgt.x,tgt.y,a)+rr+24;
  const sp=k.speed*(1+prog*0.4)*(0.9+Math.random()*0.2),L=rnd(k.labels);
- G.items.push({id:G.nid++,kind,label:L[0],icon:L[1],r:rr,x:tgt.x+Math.cos(a)*D,y:tgt.y+Math.sin(a)*D,vx:-Math.cos(a)*sp,vy:-Math.sin(a)*sp,state:'in',wob:Math.random()*10,target:tgt,from:null,ign:null,noSet:[]});
+ G.items.push({id:G.nid++,kind,label:L[0],icon:L[1],r:rr,x:tgt.x+Math.cos(a)*D,y:tgt.y+Math.sin(a)*D,vx:-Math.cos(a)*sp,vy:-Math.sin(a)*sp,state:'in',wob:Math.random()*10,target:tgt,from:null,ign:null,noSet:[],negSet:[]});
 }
 
 // ---- messages and effects (the host forwards them to the other players) ----
@@ -250,11 +250,10 @@ function bounceOff(it,p,ang,speed){const nx=Math.cos(ang),ny=Math.sin(ang),dot=i
  const s=Math.hypot(vx,vy)||1;it.vx=vx/s*speed;it.vy=vy/s*speed;it.ign=p;it.ignT=0.8}
 function impact(it,p){
  const ang=Math.atan2(it.y-p.y,it.x-p.x),face=faceAt(p,ang),k=it.kind,sp=Math.hypot(it.vx,it.vy);
- // something you negotiated, coming back to you
- if(it.owner===p){p.log[face]++;
-  if(face==='bare'){landNegotiated(it,p,ang);return}
-  if(face==='neg'){bounceOff(it,p,ang,Math.max(50,sp*0.8));it.walls=true;it.seekT=2.5;say(p,'Pushed it back again. It keeps coming back until you catch it on open ground.','#f2cc8f');return}
-  it.owner=null;p.log.no--; // a No cancels the deal; handled as a normal No below
+ // a negotiated request: open ground lands the lighter version, whoever catches it
+ if(it.negotiated){
+  if(face==='bare'){p.log.bare++;landNegotiated(it,p,ang);return}
+  if(face==='no'){it.negotiated=false;it.negSet=[]} // a No ends the deal; handled as a normal No below
  }
  const passer=it.from&&it.from!==p?it.from:null;
  p.log[face]++;
@@ -273,11 +272,15 @@ function impact(it,p){
  }
  if(face==='neg'){
   if(k==='noise'){it.from=p;bounceOff(it,p,ang,sp*1.2);it.ignT=99;say(p,"There's no negotiating with noise. It just bounced.",'#c9c3a0');return}
-  if(HEAVY(k)&&passer)handoff(p,passer);
-  const first=!it.negotiated;Object.assign(it,{negotiated:true,owner:p,from:p,walls:true,seekT:3,seeking:false});
-  bounceOff(it,p,ang,Math.max(55,sp*0.8));
-  if(first&&k==='extra')energy(p,0.5);
-  say(p,k==='extra'?'Negotiated: smaller, and later. It will come back; catch it on open ground.':k==='friend'?'Negotiated a visit for later. It will come back; catch it on open ground.':"Pushed back. Real work doesn't get lighter, but it will come back; catch it on open ground.",'#f2cc8f');
+  // Negotiate passes it on: it bounces toward a teammate, lighter, and anyone can still catch it.
+  const firstHere=!it.negSet.includes(p.slot);if(firstHere)it.negSet.push(p.slot);
+  if(firstHere&&k==='extra')energy(p,0.5);
+  Object.assign(it,{negotiated:true,from:p,walls:true,seekT:0.6,seeking:false});
+  bounceOff(it,p,ang,Math.max(60,sp*0.9));
+  const alive=G.planets.filter(q=>!q.dead);
+  if(alive.every(q=>it.negSet.includes(q.slot))){it.toSun=true;it.walls=false;it.ign=null;
+   announce(`Everyone negotiated "${it.label}". It spiralled into the sun, and nobody got to do anything with it.`,'#ffcf7a');return}
+  say(p,k==='extra'?'Negotiated: it gets lighter and heads to a teammate. You can still catch it yourself.':k==='friend'?"Negotiated a visit. Your friend will try a teammate next, or you can still catch them.":"Passed real work to a teammate. It doesn't get lighter.",'#f2cc8f');
   return;
  }
  it.state='gone';
@@ -290,15 +293,15 @@ function impact(it,p){
 }
 // Catching a negotiated request on open ground lands the lighter version.
 function landNegotiated(it,p,ang){
- it.state='gone';
- if(it.kind==='extra'){energy(p,-1);addFeat(p,ang,'office',0.9);workDone(p);say(p,'Landed the negotiated extra. Done, and lighter.','#9fb3ef')}
- else if(it.kind==='work'){energy(p,-1.5);addFeat(p,ang,'office',0.9);workDone(p);say(p,'Landed the work you pushed back.','#9fb3ef')}
- else{addFeat(p,ang,'house',0.9);homeAdded(p);say(p,'The visit happened, on your terms. A home.','#f2cc8f')}
+ it.state='gone';const passer=it.from&&it.from!==p?it.from:null;
+ if(HEAVY(it.kind)&&passer)handoff(p,passer);
+ if(it.kind==='extra'){energy(p,-1);addFeat(p,ang,'office',0.9);workDone(p);say(p,passer?`Caught the extra ${passer.name} negotiated. Done, and lighter.`:'Caught your negotiated extra. Done, and lighter.','#9fb3ef')}
+ else if(it.kind==='work'){energy(p,-1.5);addFeat(p,ang,'office',0.9);workDone(p);say(p,passer?`Caught the work ${passer.name} passed on.`:'Caught the work you pushed back.','#9fb3ef')}
+ else{addFeat(p,ang,'house',0.9);homeAdded(p);say(p,passer?`Caught the visit ${passer.name} negotiated. A home.`:'The visit happened, on your terms. A home.','#f2cc8f')}
 }
 // Flying into the sun: your planet explodes and you're out for the season.
 function kill(p){
  p.dead=true;p.energy=0;explode(p.x,p.y);explode(p.x+12,p.y-9);burst(p.x,p.y,p.col,30,180);
- for(const it of G.items)if(it.owner===p)it.owner=null;
  if(MODE!=='solo')announce(`${p===G.me?'You':p.name} flew into the sun and ${p===G.me?'are':'is'} out for this season.`,'#ffcf7a');
  if(p===G.me)note("You flew into the sun. You're out for this season.",'#ffcf7a');
  if((MODE==='solo'&&p===G.me)||G.planets.filter(q=>q.human).every(q=>q.dead))finish('sun');
@@ -308,14 +311,14 @@ function aiThink(p,dt){
  if(p.rest>0||p.dead)return;
  let best=null,bt=1e9;
  for(const it of G.items){
-  if(it.state!=='in'||it.ign===p||(it.owner&&it.owner!==p))continue;
+  if(it.state!=='in'||it.ign===p||it.toSun)continue;
   const dx=p.x-it.x,dy=p.y-it.y,d=Math.hypot(dx,dy),v=Math.hypot(it.vx,it.vy)||1,closing=(it.vx*dx+it.vy*dy)/d;
   if(closing<=5)continue;if(Math.abs(it.vx*dy-it.vy*dx)/v>R+26+it.r)continue;
   const t=(d-R)/closing;if(t<bt){bt=t;best=it}
  }
  let want;
  if(!best)return;
- want=best.owner===p?(used(p)+2<=CAP?'yes':'neg'):POLICY[p.policy](p,best.kind);
+ want=best.negotiated?(used(p)+2<=CAP&&p.energy>1.5?'yes':'neg'):POLICY[p.policy](p,best.kind);
  if(want==='no'&&p.shieldDown>0)want='neg';
  const ta=Math.atan2(best.y-p.y,best.x-p.x);
  const fc=want==='no'?0:want==='neg'?Math.PI:(Math.abs(adiff(ta-p.rot,Math.PI/2))<Math.abs(adiff(ta-p.rot,-Math.PI/2))?Math.PI/2:-Math.PI/2);
@@ -360,22 +363,24 @@ function update(dt){
    // after a No, friends look for someone who hasn't turned them down; heavy work looks for anyone
    if(it.walls){if(it.seekT>0)it.seekT-=dt;else{
     if(HEAVY(it.kind)&&!it.seeking){it.seeking=true;const sp=Math.hypot(it.vx,it.vy)||1,v=KINDS[it.kind].speed*1.1;it.vx*=v/sp;it.vy*=v/sp}
-    let tg=it.owner||null,bd=it.owner?0:1e9;if(!it.owner)for(const q of G.planets){if(it.kind==='friend'&&it.noSet.includes(q.slot))continue;const d=Math.hypot(q.x-it.x,q.y-it.y);if(d<bd){bd=d;tg=q}}
+    let tg=null,bd=1e9;for(const q of G.planets){if(q.dead)continue;if(it.kind==='friend'&&!it.negotiated&&it.noSet.includes(q.slot))continue;if(it.negotiated&&it.negSet.includes(q.slot))continue;const d=Math.hypot(q.x-it.x,q.y-it.y);if(d<bd){bd=d;tg=q}}
     if(tg){const a=Math.atan2(tg.y-it.y,tg.x-it.x),sp=Math.hypot(it.vx,it.vy),kk=Math.min(1,dt*1.3);it.vx+=(Math.cos(a)*sp-it.vx)*kk;it.vy+=(Math.sin(a)*sp-it.vy)*kk}}}
-   if(it.from&&it.kind!=='friend'&&!it.owner)gravity(it,dt);
+   if(it.toSun){const a=Math.atan2(sy-it.y,sx-it.x)+0.9,sp=95;it.vx+=(Math.cos(a)*sp-it.vx)*Math.min(1,dt*2);it.vy+=(Math.sin(a)*sp-it.vy)*Math.min(1,dt*2);gravity(it,dt*3)}
+   else if(it.from&&it.kind!=='friend'&&!it.negotiated)gravity(it,dt);
    let vx=it.vx,vy=it.vy;
    if(it.kind==='noise'){const n=Math.hypot(it.vx,it.vy)||1,w=Math.sin(it.wob)*30;vx+=-it.vy/n*w;vy+=it.vx/n*w}
    it.x+=vx*dt;it.y+=vy*dt;
    if(it.walls){if(it.x<it.r){it.x=it.r;it.vx=Math.abs(it.vx)}if(it.x>W-it.r){it.x=W-it.r;it.vx=-Math.abs(it.vx)}if(it.y<it.r){it.y=it.r;it.vy=Math.abs(it.vy)}if(it.y>H-it.r){it.y=H-it.r;it.vy=-Math.abs(it.vy)}}
    // anything that hits the sun blows up
    if(Math.hypot(it.x-sx,it.y-sy)<SUN+it.r){it.state='gone';explode(it.x,it.y);
-    if(it.kind==='friend'){announce(`"${it.label}" flew into the sun. Nobody answered it.`,'#f08aa0')}
-    else if(it.from){it.from.log.sunned++;say(it.from,HEAVY(it.kind)?'Into the sun. That work is gone for good.':'Into the sun. Gone for good.','#ffcf7a')}
+    if(it.toSun){}
+    else if(it.kind==='friend'){announce(`"${it.label}" flew into the sun. Nobody answered it.`,'#f08aa0')}
+    else if(it.from&&!it.toSun){it.from.log.sunned++;say(it.from,HEAVY(it.kind)?'Into the sun. That work is gone for good.':'Into the sun. Gone for good.','#ffcf7a')}
     continue}
-   for(const p of G.planets){if(p===it.ign||p.dead||(it.owner&&it.owner!==p))continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
+   if(!it.toSun)for(const p of G.planets){if(p===it.ign||p.dead)continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
   }else if(it.state==='out'){it.x+=it.vx*dt;it.y+=it.vy*dt;it.fade-=dt*0.7;if(it.fade<=0)it.state='gone'}
  }
- G.items=G.items.filter(i=>i.state!=='gone'&&(i.walls||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
+ G.items=G.items.filter(i=>i.state!=='gone'&&(i.walls||i.toSun||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
  fx(dt);
  const ti=tierIdx(teamScore());
  if(ti>G.tierIdx){G.tierIdx=ti;G.tierPulse=1.2;ring();announce(`Your team is ${TEAM_TIERS[ti][1]}!`,'#a8d5a2')}else if(ti<G.tierIdx)G.tierIdx=ti;
@@ -450,7 +455,7 @@ function drawPlanet(p){
 function drawAim(){
  const p=G.me;if(p.dead)return;
  for(const it of G.items){
-  if(it.state!=='in'||it.ign===p||it.owner)continue;
+  if(it.state!=='in'||it.ign===p||it.negotiated||it.toSun)continue;
   const v=Math.hypot(it.vx,it.vy)||1,dx=it.vx/v,dy=it.vy/v,ox=it.x-p.x,oy=it.y-p.y,Rc=R+12+it.r;
   const b=ox*dx+oy*dy,c=ox*ox+oy*oy-Rc*Rc,disc=b*b-c;if(disc<0)continue;const t=-b-Math.sqrt(disc);if(t<0||t>240)continue;
   const cxp=ox+dx*t,cyp=oy+dy*t,ang=Math.atan2(cyp,cxp);if(faceAt(p,ang)!=='no')continue;
@@ -482,7 +487,7 @@ function draw(){
   ctx.globalAlpha=it.fade!=null?Math.max(0,it.fade):1;const hr=it.r+5;
   if(HEAVY(it.kind)){const ex=it.kind==='extra';ctx.save();ctx.translate(it.x,it.y);ctx.rotate(G.t*(ex?0.9:0.4));ctx.fillStyle=ex?'rgba(150,110,220,.38)':'rgba(91,123,214,.35)';ctx.strokeStyle=ex?'rgba(185,150,245,.9)':'rgba(120,150,235,.8)';ctx.lineWidth=2;ctx.fillRect(-hr,-hr,hr*2,hr*2);ctx.strokeRect(-hr,-hr,hr*2,hr*2);ctx.restore()}
   else{ctx.fillStyle=it.kind==='friend'?'rgba(240,138,160,.3)':'rgba(217,211,160,.22)';ctx.beginPath();ctx.arc(it.x,it.y,hr,0,TAU);ctx.fill();if(it.kind==='friend'){ctx.strokeStyle='rgba(240,138,160,.7)';ctx.lineWidth=2;ctx.stroke()}}
-  if(it.owner){ctx.strokeStyle='rgba(242,204,143,.85)';ctx.lineWidth=2;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(it.x,it.y,hr+5,0,TAU);ctx.stroke();ctx.setLineDash([])}
+  if(it.negotiated){ctx.strokeStyle='rgba(242,204,143,.85)';ctx.lineWidth=2;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(it.x,it.y,hr+5,0,TAU);ctx.stroke();ctx.setLineDash([])}
   ctx.font=`${Math.round(it.r*1.85)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.icon,it.x,it.y+1);
   if(it.state==='in'&&!it.from&&it.label){const dd=Math.min(...G.planets.map(p=>Math.hypot(it.x-p.x,it.y-p.y))),la=clamp((dd-(R+60))/60,0,1);if(la>0){ctx.fillStyle=`rgba(244,237,225,${0.85*la})`;ctx.font='600 11px -apple-system,Segoe UI,sans-serif';ctx.textBaseline='bottom';ctx.fillText(it.label,it.x,it.y-it.r-8)}}
   ctx.globalAlpha=1;
@@ -506,7 +511,7 @@ function send(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))
 function snapshot(){
  const ps=G.planets.map(p=>{const o={x:r1(p.x),y:r1(p.y),r:r3(p.rot),e:r1(p.energy),sd:r1(p.shieldDown),rs:r1(p.rest),d:p.dead?1:0,w:p.work||0};
   if(p.fv!==p.sentFv||G.t-(p.sentAt||0)>2){o.f=p.feats.map(f=>[r3(f.ang),f.type,f.size,r1(f.born),f.until?r1(f.until):0]);p.sentFv=p.fv;p.sentAt=G.t}return o});
- const its=G.items.map(i=>[i.id,KN.indexOf(i.kind),i.icon,r1(i.x),r1(i.y),r1(i.vx),r1(i.vy),r1(i.r),STN.indexOf(i.state),i.state==='out'?r1(i.fade):1,i.from?1:0,i.ign?i.ign.slot:-1,i.from?'':i.label,i.owner?i.owner.slot:-1]);
+ const its=G.items.map(i=>[i.id,KN.indexOf(i.kind),i.icon,r1(i.x),r1(i.y),r1(i.vx),r1(i.vy),r1(i.r),STN.indexOf(i.state),i.state==='out'?r1(i.fade):1,i.from?1:0,i.ign?i.ign.slot:-1,i.from?'':i.label,i.negotiated?1:0]);
  return {t:'state',tm:r1(G.t),ti:G.tierIdx,ps,its,ev:G.ev.splice(0)};
 }
 function applyEvents(ev){
@@ -538,7 +543,7 @@ function interpolate(){
  b.m.ps.forEach((q,i)=>{const p=G.planets[i];if(!p||p===G.me)return;const o=a.m.ps[i]||q;p.x=lerp(o.x,q.x);p.y=lerp(o.y,q.y);p.rot=o.r+adiff(q.r,o.r)*k});
  const prev=new Map(a.m.its.map(r=>[r[0],r]));
  G.items=b.m.its.map(r=>{const o=prev.get(r[0])||r,st=STN[r[8]];
-  return {id:r[0],kind:KN[r[1]],icon:r[2],x:lerp(o[3],r[3]),y:lerp(o[4],r[4]),vx:r[5],vy:r[6],r:r[7],state:st,fade:st==='out'?r[9]:null,from:r[10]?true:null,ign:r[11]>=0?G.planets[r[11]]:null,label:r[12],owner:r[13]>=0?G.planets[r[13]]:null}});
+  return {id:r[0],kind:KN[r[1]],icon:r[2],x:lerp(o[3],r[3]),y:lerp(o[4],r[4]),vx:r[5],vy:r[6],r:r[7],state:st,fade:st==='out'?r[9]:null,from:r[10]?true:null,ign:r[11]>=0?G.planets[r[11]]:null,label:r[12],negotiated:!!r[13]}});
 }
 function onInput(m){
  if(MODE!=='host'||!G)return;const p=G.planets[m.slot];if(!p||!p.remote||p.dead)return;
@@ -651,7 +656,7 @@ function renderEnd(sum,mySlot){
   <div class="stats"><span>Bounced off your shield</span><b>${L.no}</b><span>Caught at your dock</span><b>${L.neg}</b><span>Accepted whole</span><b>${L.bare}</b><span>Work handed to a teammate with room</span><b>${L.handGood}</b><span>Work handed to a tired teammate</span><b>${L.handStrained}</b><span>Noise you bounced onto a teammate</span><b>${L.passedNoise}</b><span>Noise you sent into the sun</span><b>${L.sunned}</b><span>Things crushed for room</span><b>${L.crushed||0}</b></div>
   <hr><p class="small"><b>What You Were Practising</b></p>
   <p class="small muted"><b style="color:var(--no)">The Shield</b> is a Clean No: decline early, without a paragraph of apology. Light things bounce. Heavy things don't.</p>
-  <p class="small muted"><b style="color:var(--neg)">The Dock</b> is a Negotiated Yes: "Yes, Thursday instead of Tuesday." You name your capacity, and it comes back when you are ready, lighter.</p>
+  <p class="small muted"><b style="color:var(--neg)">The Dock</b> is a Negotiated Yes: "Yes, Thursday instead of Tuesday." You name your capacity, and the request gets lighter and goes to whoever has room.</p>
   <p class="small muted"><b style="color:var(--yes)">Open Ground</b> is a Trusting Yes: it costs energy now, but when it fits the life you want, it leaves you more alive.</p>
   <p class="small muted"><b style="color:#9fb3ef">The Pass</b> is Hand It Off: a No can send work to someone better placed to say yes. It works when you aim it at someone with room. A friend you bounce asks someone else, but they'd rather have heard yes from you.</p>
   ${buttons}`;
