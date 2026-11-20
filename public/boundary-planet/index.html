@@ -30,6 +30,8 @@ p{line-height:1.55;margin:.45em 0}
 input{font:inherit;font-size:16px;background:#141b2e;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
 #code{width:8.5em;text-transform:uppercase;letter-spacing:.12em}
 .hidden{display:none!important}
+.hudbtn{pointer-events:auto;appearance:none;font:inherit;font-size:.82rem;font-weight:700;color:var(--ink);background:rgba(29,38,64,.85);border:1px solid var(--line);border-radius:10px;padding:6px 12px;min-height:34px;cursor:pointer}
+.hudbtn:hover{border-color:var(--ink)}.hudbtn:focus-visible{outline:3px solid var(--neg);outline-offset:2px}
 .caption{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:88vw;text-align:center;font-family:Georgia,serif;font-size:.95rem;padding:8px 14px;border-radius:10px;background:rgba(29,38,64,.85);border:1px solid var(--line);opacity:0;transition:opacity .35s;pointer-events:none}
 .caption.show{opacity:1}
 .pts b{font-size:1.6rem;font-family:Georgia,serif;color:var(--yes);min-width:34px;text-align:right}
@@ -49,7 +51,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 <body>
 <canvas id="cv"></canvas>
 <div class="hud" id="hud">
- <div class="meter">Season<div class="bar"><div id="se" style="background:#a9b0c4"></div></div></div>
+ <div class="meter"><button class="hudbtn" id="exitbtn" title="Exit (Esc)">Exit</button>Season<div class="bar"><div id="se" style="background:#a9b0c4"></div></div></div>
  <div class="meter">Your Energy<div class="bar"><div id="en" style="background:var(--neg)"></div></div></div>
  <div class="meter pts"><b id="flv">0</b><span>team pts</span><div class="tierbox"><span id="tierl">Bare Rock</span><div class="bar"><div id="fl" style="background:var(--yes)"></div></div><span id="nextl" class="nextl"></span></div></div>
 </div>
@@ -85,6 +87,11 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
  <div class="row"><button class="btn" id="go">Start Season</button><button class="btn ghost" id="leave">Leave Room</button></div>
 </div></div>
 
+<div class="overlay hidden" id="quit"><div class="panel" style="max-width:420px">
+ <h2 id="qtitle">Leave This Season?</h2>
+ <p id="qtext" class="muted"></p>
+ <div class="row"><button class="btn" id="qstay">Keep Playing</button><button class="btn ghost" id="qgo">Exit</button></div>
+</div></div>
 <div class="overlay hidden" id="end"><div class="panel" id="endpanel"></div></div>
 <script>
 {
@@ -477,6 +484,7 @@ function startRoomSeason(){
 // ---- loops ----
 function loop(now){
  if(!G||G.over)return;
+ if(G.paused){G.last=now;draw();requestAnimationFrame(loop);return}
  const dt=Math.min(0.05,(now-G.last)/1000);G.last=now;
  update(dt);
  if(MODE==='host'){NET.sendT-=dt;if(NET.sendT<=0||G.over){NET.sendT=1/12;send(snapshot())}}
@@ -532,10 +540,10 @@ function renderEnd(sum,mySlot){
  else if(L.handGood>=1)story='You found the pass. Next season, try lining up a teammate before the heavy stuff arrives.';
  else story='Three planets, side by side. Everyone handled their own sky. Heavy things bounce better when someone is ready to catch them.';
  const hostName=(NET.players.find(p=>p.id===NET.hostId)||{}).name||'the host';
- const buttons=solo?`<button class="btn" id="again">Play Again</button>`
-  :isHost()?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="toroom">Back to Room</button></div>`
+ const buttons=solo?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="home">Home</button></div>`
+  :isHost()?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="toroom">Back to Room</button><button class="btn ghost" id="leave3">Leave Room</button></div>`
   :`<p class="small muted">Waiting for ${esc(hostName)} to start the next season.</p><button class="btn ghost" id="leave2">Leave Room</button>`;
- $('endpanel').innerHTML=`<p class="small muted">${sum.why==='burnout'?'Out of energy. The season ended early.':'The season is over.'}</p><h2>Your System: ${tier(fv)}</h2><p><b>${fv} team points</b>. ${isBest?(best==null?'Your first season like this.':'Your best season yet.'):`Your best so far: ${best}.`}</p><p>${story}</p>
+ $('endpanel').innerHTML=`<p class="small muted">${sum.why==='burnout'?'Out of energy. The season ended early.':sum.why==='stopped'?'The host ended the season early.':'The season is over.'}</p><h2>Your System: ${tier(fv)}</h2><p><b>${fv} team points</b>. ${isBest?(best==null?'Your first season like this.':'Your best season yet.'):`Your best so far: ${best}.`}</p><p>${story}</p>
   <div class="stats"><span>Bounced off your shield</span><b>${L.no}</b><span>Caught at your dock</span><b>${L.neg}</b><span>Accepted whole</span><b>${L.bare}</b><span>Work handed to a teammate with room</span><b>${L.handGood}</b><span>Work handed to a tired teammate</span><b>${L.handStrained}</b><span>Noise you bounced onto a teammate</span><b>${L.passedNoise}</b><span>Noise you sent into the sun</span><b>${L.sunned}</b><span>Burnouts across the team</span><b>${burn}</b></div>
   <p class="small muted">${sum.planets.map(desc).join(' ')}</p>
   <hr><p class="small"><b>What You Were Practising</b></p>
@@ -546,11 +554,11 @@ function renderEnd(sum,mySlot){
   ${buttons}`;
  hideAll();$('end').classList.remove('hidden');
  const on=(id,f)=>{const b=$(id);if(b)b.onclick=f};
- on('again',solo?startSolo:startRoomSeason);on('toroom',()=>showRoom());on('leave2',leaveRoom);
+ on('again',solo?startSolo:startRoomSeason);on('toroom',()=>showRoom());on('leave2',leaveRoom);on('leave3',leaveRoom);on('home',()=>showIntro(''));
 }
 
 // ---- screens ----
-function hideAll(){['intro','room','end'].forEach(id=>$(id).classList.add('hidden'))}
+function hideAll(){['intro','room','end','quit'].forEach(id=>$(id).classList.add('hidden'))}
 function showIntro(msg){hideAll();MODE='solo';resize();$('intro').classList.remove('hidden');$('neterr').textContent=msg||'';try{history.replaceState(null,'',location.pathname)}catch(e){}}
 function showRoom(msg){
  if(G&&MODE==='client'&&!G.over)return;
@@ -564,6 +572,19 @@ function showRoom(msg){
 }
 function myName(){const n=$('nm').value.trim().slice(0,16)||'Player';try{localStorage.setItem('bp-name',n)}catch(e){}return n}
 function startSolo(){hideAll();MODE='solo';resize();newGame(soloRoster(),0);requestAnimationFrame(t=>{G.last=t;spawn();setTimeout(()=>{if(G&&!G.over&&MODE==='solo')spawn()},700);requestAnimationFrame(loop)})}
+function openQuit(){
+ if(!G||G.over||!$('quit').classList.contains('hidden'))return;
+ const t={solo:['Leave This Season?','Your season ends here and you go back to the start screen. Nothing is saved.','Exit'],
+  host:['End the Season for Everyone?','You are the host, so this ends the season for the whole room. Everyone sees the end screen, and you can start again from the room.','End Season'],
+  client:['Leave the Room?','You leave this season and the room. A computer teammate takes over your planet.','Leave Room']}[MODE];
+ $('qtitle').textContent=t[0];$('qtext').textContent=t[1];$('qgo').textContent=t[2];
+ if(MODE==='solo')G.paused=true;
+ $('quit').classList.remove('hidden');$('qstay').focus();
+}
+function closeQuit(){$('quit').classList.add('hidden');if(G)G.paused=false}
+function doQuit(){closeQuit();if(!G||G.over)return;if(MODE==='solo'){G.over=true;showIntro('')}else if(MODE==='host')finish('stopped');else leaveRoom()}
+$('exitbtn').onclick=openQuit;$('qstay').onclick=closeQuit;$('qgo').onclick=doQuit;
+window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('quit').classList.contains('hidden'))closeQuit();else openQuit()});
 const CODECH='ABCDEFGHJKLMNPQRSTUVWXYZ';
 $('solo').onclick=startSolo;
 $('create').onclick=()=>{let c='';for(let i=0;i<4;i++)c+=CODECH[Math.floor(Math.random()*CODECH.length)];joinRoom(c)};
