@@ -39,6 +39,9 @@ input{font:inherit;font-size:16px;background:#141b2e;color:var(--ink);border:1.5
 .tierbox{display:flex;flex-direction:column;gap:2px;font-size:.75rem}
 .tierbox #tierl{font-weight:700}
 .nextl{color:var(--muted);font-size:.7rem}
+.rules{width:100%;border-collapse:collapse;font-size:.88rem;margin:8px 0 14px}.rules th,.rules td{text-align:left;vertical-align:top;padding:7px 8px;border-top:1px solid var(--line)}.rules th{font-weight:700;color:var(--muted);font-size:.8rem}.rules td:first-child{white-space:nowrap;font-weight:700}
+.plus{color:var(--yes)}.minus{color:var(--no)}.en{color:var(--neg)}
+@media(max-width:600px){.rules thead{display:none}.rules tr{display:grid;padding:6px 0;border-top:1px solid var(--line)}.rules td{border:0;padding:2px 0}.rules td[data-l]::before{content:attr(data-l) ": ";color:var(--muted)}}
 .stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:.92rem;margin:10px 0}
 .roomcode{font-family:Georgia,serif;font-size:2.6rem;letter-spacing:.18em;margin:.1em 0}
 .seats{display:grid;gap:8px;margin:12px 0}
@@ -51,8 +54,8 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 <body>
 <canvas id="cv"></canvas>
 <div class="hud" id="hud">
- <div class="meter"><button class="hudbtn" id="exitbtn" title="Exit (Esc)">Exit</button>Season<div class="bar"><div id="se" style="background:#a9b0c4"></div></div></div>
- <div class="meter">Your Energy<div class="bar"><div id="en" style="background:var(--neg)"></div></div></div>
+ <div class="meter"><button class="hudbtn" id="exitbtn" title="Exit (Esc)">Exit</button><button class="hudbtn" id="rulesbtn" title="How points and energy work">Rules</button>Season<div class="bar"><div id="se" style="background:#a9b0c4"></div></div></div>
+ <div class="meter">Your Energy<div class="bar"><div id="en" style="background:var(--neg)"></div></div><b id="env" style="min-width:2.2em">10</b></div>
  <div class="meter pts"><b id="flv">0</b><span>team pts</span><div class="tierbox"><span id="tierl">Bare Rock</span><div class="bar"><div id="fl" style="background:var(--yes)"></div></div><span id="nextl" class="nextl"></span></div></div>
 </div>
 <div id="caption" class="caption"></div>
@@ -69,13 +72,13 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
   <b>Move</b><span>Drag your planet, or use WASD.</span>
   <b>Spin</b><span>Drag anywhere else in the sky, or use the arrow keys (Q and E work too).</span>
  </div>
- <p class="small muted">Senders: <b>Noise</b> 🔔, <b>Friends</b> ☕ and heavy <b>Boss</b> requests 📅. Heavy work won't bounce away, but you can aim it at a teammate who has room. The whole team scores together.</p>
+ <p class="small muted">Senders: <b>Noise</b> 🔔, <b>Friends</b> ☕ and heavy <b>Boss</b> requests 📅. Everything bounces off a No. Heavy work comes back to someone, so aim it at a teammate who has room. Anything that hits the sun blows up. The whole team scores together.</p>
  <hr>
  <div class="row"><label class="small" for="nm">Your Name</label><input id="nm" maxlength="16" autocomplete="nickname" placeholder="Your name"></div>
- <div class="row"><button class="btn" id="solo">Play Solo</button><button class="btn ghost" id="create">Create Room</button></div>
+ <div class="row"><button class="btn" id="solo">Play Solo</button><button class="btn ghost" id="create">Create Room</button><button class="btn ghost" id="rules2">How Points Work</button></div>
  <div class="row"><input id="code" maxlength="6" placeholder="CODE" autocomplete="off" aria-label="Room code"><button class="btn ghost" id="join">Join Room</button></div>
  <p id="neterr" class="small err"></p>
- <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.5 · One season, about two minutes</p>
+ <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.6 · One season, about two minutes</p>
 </div></div>
 
 <div class="overlay hidden" id="room"><div class="panel">
@@ -91,6 +94,20 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
  <h2 id="qtitle">Leave This Season?</h2>
  <p id="qtext" class="muted"></p>
  <div class="row"><button class="btn" id="qstay">Keep Playing</button><button class="btn ghost" id="qgo">Exit</button></div>
+</div></div>
+<div class="overlay hidden" id="rules"><div class="panel" style="max-width:640px">
+ <h2>How Points and Energy Work</h2>
+ <p class="small muted">Points are shared by the whole team. Energy is yours alone.</p>
+ <table class="rules"><thead><tr><th>Request</th><th>No (shield)</th><th>Negotiate (dock)</th><th>Yes (open ground)</th></tr></thead><tbody>
+ <tr><td>Noise 🔔</td><td data-l="No"><span class="plus">+1</span>. Bounces away.</td><td data-l="Negotiate"><span class="minus">−1</span> clutter.</td><td data-l="Yes"><span class="minus">−1</span> clutter.</td></tr>
+ <tr><td>Friend ☕</td><td data-l="No"><span class="minus">−1</span>. Bounces off and asks a teammate next. Leaves only when all three planets have said No.</td><td data-l="Negotiate"><span class="plus">+2</span> home.</td><td data-l="Yes"><span class="plus">+3</span> tree, <span class="en">−0.5 energy</span>. Once it grows: <span class="en">+1.5 energy</span> back.</td></tr>
+ <tr><td>Boss 📅</td><td data-l="No">0. Bounces, but heavy work comes back to someone. Three in a row cracks your shield for 5 seconds.</td><td data-l="Negotiate"><span class="plus">+2</span> office, <span class="en">−1 energy</span>.</td><td data-l="Yes"><span class="plus">+1</span> tower, <span class="en">−3 energy</span>.</td></tr>
+ </tbody></table>
+ <p class="small"><b>Hand-offs.</b> Boss work you bounce that a teammate catches: <span class="plus">+2</span> if they had energy to spare (5 or more). If they were tired: <span class="minus">−1</span>, and they lose <span class="en">1.5 energy</span>.</p>
+ <p class="small"><b>The sun.</b> Anything that hits the sun blows up. A friend lost that way costs <span class="minus">−1</span>.</p>
+ <p class="small"><b>Energy.</b> You start with 10 of 12. It refills slowly, about 1 every 25 seconds, and grown trees give some back. Low energy makes you slower to move and turn. At zero: playing solo, your season ends; in a room, you rest for 6 seconds with your shield and dock down, and the team loses 3.</p>
+ <p class="small"><b>Tiers.</b> Sprouting at 25, Growing at 60, Flourishing at 110, Thriving at 170.</p>
+ <button class="btn" id="rclose">Got It</button>
 </div></div>
 <div class="overlay hidden" id="end"><div class="panel" id="endpanel"></div></div>
 <script>
@@ -137,11 +154,11 @@ function mkPlanet(slot,seat){
  const S=SEATS[slot],h=homes()[slot];
  return {slot,name:seat.name||S.ai,human:!!seat.human,remote:!!seat.remote,hx:h[0],hy:h[1],x:h[0]*W,y:h[1]*H,tx:h[0]*W,ty:h[1]*H,
   rot:slot===0?-Math.PI/2:Math.random()*TAU,energy:10,feats:[],fv:0,shieldDown:0,cracks:0,rest:0,col:S.col,col2:S.col2,policy:S.policy,skill:S.skill,
-  phase:Math.random()*9,burnouts:0,recent:[],log:{no:0,neg:0,bare:0,handGood:0,handStrained:0,passedNoise:0,sunned:0}};
+  phase:Math.random()*9,burnouts:0,recent:[],ptsBy:{},log:{no:0,neg:0,bare:0,handGood:0,handStrained:0,passedNoise:0,sunned:0}};
 }
 // roster: one entry per seat {name,human,remote}; me: the seat this browser controls
 function newGame(roster,me){
- G={t:0,dur:120,items:[],floats:[],parts:[],ev:[],nid:1,score:0,tierIdx:0,tierPulse:0,spawnT:0.3,over:false,last:performance.now(),keys:{},kbMove:false,tiredNote:false,
+ G={t:0,dur:120,items:[],floats:[],parts:[],booms:[],ev:[],nid:1,score:0,tierIdx:0,tierPulse:0,spawnT:0.3,over:false,last:performance.now(),keys:{},kbMove:false,tiredNote:false,
   planets:roster.map((s,i)=>mkPlanet(i,s))};
  G.me=G.planets[me];seenNotes.clear();
 }
@@ -170,7 +187,7 @@ function spawn(){
  for(let i=0;i<wts.length;i++){if(q<wts[i]){tgt=G.planets[i];break}q-=wts[i]}
  const rr=k.r*IS*0.85,a=pickAngle(tgt,rr),D=edgeDist(tgt.x,tgt.y,a)+rr+24;
  const sp=k.speed*(1+prog*0.4)*(0.9+Math.random()*0.2),L=rnd(k.labels);
- G.items.push({id:G.nid++,kind,label:L[0],icon:L[1],r:rr,x:tgt.x+Math.cos(a)*D,y:tgt.y+Math.sin(a)*D,vx:-Math.cos(a)*sp,vy:-Math.sin(a)*sp,state:'in',wob:Math.random()*10,target:tgt,from:null,ign:null});
+ G.items.push({id:G.nid++,kind,label:L[0],icon:L[1],r:rr,x:tgt.x+Math.cos(a)*D,y:tgt.y+Math.sin(a)*D,vx:-Math.cos(a)*sp,vy:-Math.sin(a)*sp,state:'in',wob:Math.random()*10,target:tgt,from:null,ign:null,noSet:[]});
 }
 
 // ---- messages and effects (the host forwards them to the other players) ----
@@ -182,15 +199,20 @@ function announce(text,col){caption(text,col);if(MODE==='host')G.ev.push(['c',te
 function burst(x,y,col,n,spd,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['b',r1(x),r1(y),col,n,spd]);for(let i=0;i<n;i++){const a=Math.random()*TAU,v=(spd||60)*(0.4+Math.random());G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:0.7+Math.random()*0.5,col,size:1.5+Math.random()*2.5})}}
 function floatText(x,y,text,col,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['f',r1(x),r1(y),text,col]);G.floats.push({x,y,text,col,life:0.9})}
 function ring(local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['r']);for(const p of G.planets)for(let k=0;k<24;k++){const a=k/24*TAU;burst(p.x+Math.cos(a)*(R+6),p.y+Math.sin(a)*(R+6),'#a8d5a2',1,110,true)}}
-function pts(p,n){G.score+=n;floatText(p.x+(Math.random()-0.5)*24,p.y-R-40,(n>0?'+':'')+n,n>0?'#81b29a':'#e07a5f')}
+const PTSNAME={bounced:'Noise bounced',tree:'Trees',home:'Homes',office:'Offices',tower:'Towers',clutter:'Clutter','friend bounced':'Friends turned away','hand-off':'Hand-offs to a teammate with room',stretched:'Hand-offs to a tired teammate',burnout:'Burnouts','friend lost':'Friends lost in the sun'};
+function pts(p,n,label){G.score+=n;p.ptsBy[label]=(p.ptsBy[label]||0)+n;const near=SIM?0:G.floats.filter(f=>!f.small&&f.life>0.45&&Math.abs(f.x-p.x)<60&&f.y<p.y).length;floatText(p.x+(Math.random()-0.5)*16,p.y-R-40-near*19,`${n>0?'+':''}${n} ${label}`,n>0?'#81b29a':'#e07a5f')}
+// Energy changes pop up beside your own planet, so you can see where it goes.
+function energy(p,d){p.energy=Math.min(12,p.energy+d);if(SIM)return;const t=`${d>0?'+':'−'}${Math.abs(d)} energy`,x=p.x+R+52,y=p.y+(Math.random()-0.5)*16;
+ if(p===G.me)G.floats.push({x,y,text:t,col:'#f2cc8f',life:1.4,small:true});else if(MODE==='host'&&p.remote)G.ev.push(['g',p.slot,r1(x),r1(y),t])}
+function explode(x,y,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['x',r1(x),r1(y)]);G.booms.push({x,y,life:0.7});burst(x,y,'#ffb347',18,150,true);burst(x,y,'#fff1c4',10,80,true)}
 const FEATCOL={tree:'#a8d5a2',house:'#f2cc8f',office:'#9fb3ef',tower:'#9fb3ef',clutter:'#8f8a78'};
 function addFeat(p,worldAng,type,size){p.feats.push({ang:norm(worldAng-p.rot),type,size:size||1,born:G.t});p.fv++;burst(p.x+Math.cos(worldAng)*(R+4),p.y+Math.sin(worldAng)*(R+4),FEATCOL[type],type==='tree'?14:8,type==='tree'?70:50)}
 
 // ---- the rules ----
 // A boss request caught by someone other than the planet that bounced it is a hand-off.
 function handoff(p,passer){
- if(p.energy>=5){pts(p,2);passer.log.handGood++;say(passer,`Handed off. ${p.name} had room for it.`,'#81b29a');say(p,`${passer.name} handed you some work.`,'#9fb3ef')}
- else{p.energy-=1.5;pts(p,-1);passer.log.handStrained++;say(passer,`${p.name} was already stretched.`,'#e07a5f');say(p,`${passer.name} passed you work while you were tired.`,'#e07a5f')}
+ if(p.energy>=5){pts(p,2,'hand-off');passer.log.handGood++;say(passer,`Handed off. ${p.name} had room for it.`,'#81b29a');say(p,`${passer.name} handed you some work.`,'#9fb3ef')}
+ else{energy(p,-1.5);pts(p,-1,'stretched');passer.log.handStrained++;say(passer,`${p.name} was already stretched.`,'#e07a5f');say(p,`${passer.name} passed you work while you were tired.`,'#e07a5f')}
 }
 function impact(it,p){
  const ang=Math.atan2(it.y-p.y,it.x-p.x),face=faceAt(p,ang),k=it.kind,passer=it.from&&it.from!==p?it.from:null;
@@ -198,41 +220,45 @@ function impact(it,p){
  if(face==='no'){
   const nx=Math.cos(ang),ny=Math.sin(ang),dot=it.vx*nx+it.vy*ny;
   let vx=it.vx-2*dot*nx,vy=it.vy-2*dot*ny;if(vx*nx+vy*ny<=0){const s=Math.hypot(it.vx,it.vy);vx=nx*s;vy=ny*s}
-  const s=Math.hypot(vx,vy)||1;it.from=p;it.ign=p;it.homing=null;
-  if(k==='noise'){it.vx=vx*1.3;it.vy=vy*1.3;pts(p,1);say(p,'Bounced. Watch where it goes.','#e07a5f')}
-  else if(k==='friend'){it.vx=vx*0.9;it.vy=vy*0.9;it.state='out';it.fade=1;pts(p,-1);say(p,'Bounced a friend. A little lonelier. Friends asked for you, so they drift off.','#f08aa0')}
-  else{const v0=0.19*Math.min(W,H);it.vx=vx/s*v0;it.vy=vy/s*v0;it.state='pushed';it.push=2.8;p.cracks++;
+  const s=Math.hypot(vx,vy)||1;it.from=p;it.ign=p;it.ignT=0.8;
+  if(k==='noise'){it.vx=vx*1.3;it.vy=vy*1.3;it.ignT=99;pts(p,1,'bounced');say(p,'Bounced. Watch where it goes.','#e07a5f')}
+  else if(k==='friend'){
+   if(!it.noSet.includes(p.slot)){it.noSet.push(p.slot);pts(p,-1,'friend bounced')}
+   const sp=Math.max(45,Math.hypot(it.vx,it.vy));it.vx=vx/s*sp;it.vy=vy/s*sp;it.walls=true;it.seekT=0.9;
+   if(it.noSet.length>=G.planets.length){it.state='out';it.fade=1;it.walls=false;announce(`Everyone said No to "${it.label}". They'll find help somewhere else.`,'#f08aa0')}
+   else say(p,"Bounced a friend. They'll ask a teammate next.",'#f08aa0')}
+  else{const v0=0.16*Math.min(W,H);it.vx=vx/s*v0;it.vy=vy/s*v0;it.walls=true;it.seekT=3.5;it.seeking=false;p.cracks++;
    if(p.cracks>=3){p.shieldDown=5;p.cracks=0;say(p,'Shield cracked. Give it a moment.','#e07a5f')}
-   else say(p,"Too heavy to bounce away. Aim it at a teammate, or it comes back.",'#9fb3ef')}
+   else say(p,"Bounced. Heavy work comes back to someone, so aim it at a teammate with room.",'#9fb3ef')}
   return;
  }
  if(face==='neg'){
   if(k==='boss'&&passer)handoff(p,passer);
   it.state='orbit';it.host=p;it.orbA=ang;it.orbT=k==='boss'?3.2:2.4;it.r*=0.65;
-  if(k==='boss'){p.energy-=1;say(p,"Caught. It'll land smaller, later.",'#f2cc8f')}
+  if(k==='boss'){energy(p,-1);say(p,"Caught. It'll land smaller, later.",'#f2cc8f')}
   else if(k==='friend')say(p,'Caught. A visit, on your terms.','#f2cc8f');
   else say(p,'Caught some noise. Still clutter.','#c9c3a0');
   return;
  }
  it.state='gone';
- if(k==='friend'){p.energy-=0.5;addFeat(p,ang,'tree',1.15);pts(p,3);say(p,'Accepted. Something will grow.','#81b29a')}
- else if(k==='boss'){if(passer)handoff(p,passer);p.energy-=3;addFeat(p,ang,'tower',1.2);pts(p,1);say(p,'Accepted, all of it. That was heavy.','#9fb3ef')}
- else{addFeat(p,ang,'clutter',0.6);pts(p,-1);
+ if(k==='friend'){energy(p,-0.5);addFeat(p,ang,'tree',1.15);pts(p,3,'tree');say(p,'Accepted. Something will grow.','#81b29a')}
+ else if(k==='boss'){if(passer)handoff(p,passer);energy(p,-3);addFeat(p,ang,'tower',1.2);pts(p,1,'tower');say(p,'Accepted, all of it. That was heavy.','#9fb3ef')}
+ else{addFeat(p,ang,'clutter',0.6);pts(p,-1,'clutter');
   if(passer){passer.log.passedNoise++;say(passer,`You bounced noise onto ${p.name}.`,'#c9c3a0');say(p,`${passer.name} bounced noise onto you.`,'#c9c3a0')}
   else say(p,'You let the noise in.','#c9c3a0')}
 }
 function landOrbit(it){
  const p=it.host,ang=it.orbA;
- if(it.kind==='boss'){addFeat(p,ang,'office',0.9);pts(p,2)}
- else if(it.kind==='friend'){addFeat(p,ang,'house',0.9);pts(p,2)}
- else{addFeat(p,ang,'clutter',0.4);pts(p,-1)}
+ if(it.kind==='boss'){addFeat(p,ang,'office',0.9);pts(p,2,'office')}
+ else if(it.kind==='friend'){addFeat(p,ang,'house',0.9);pts(p,2,'home')}
+ else{addFeat(p,ang,'clutter',0.4);pts(p,-1,'clutter')}
 }
 // Computer teammates turn toward the most urgent request and answer by personality.
 function aiThink(p,dt){
  if(p.rest>0)return;
  let best=null,bt=1e9;
  for(const it of G.items){
-  if(!(it.state==='in'||it.state==='pushed')||it.ign===p)continue;
+  if(it.state!=='in'||it.ign===p)continue;
   const dx=p.x-it.x,dy=p.y-it.y,d=Math.hypot(dx,dy),v=Math.hypot(it.vx,it.vy)||1,closing=(it.vx*dx+it.vy*dy)/d;
   if(closing<=5)continue;if(Math.abs(it.vx*dy-it.vy*dx)/v>R+26+it.r)continue;
   const t=(d-R)/closing;if(t<bt){bt=t;best=it}
@@ -266,30 +292,34 @@ function update(dt){
   if(p.shieldDown>0)p.shieldDown-=dt;
   if(p.rest>0){p.rest-=dt;p.energy=Math.min(12,p.energy+dt*0.6)}else p.energy=Math.min(12,p.energy+dt*0.04);
   const endsSeason=MODE==='solo'&&p===G.me;
-  if(!endsSeason&&p.energy<=0&&p.rest<=0){p.energy=0;p.rest=6;p.shieldDown=6;p.burnouts++;pts(p,-3);announce(`${p.human&&p===G.me?'You':p.name} burned out and need${p.human&&p===G.me?'':'s'} a rest.`,'#e07a5f');say(p,'You burned out. Rest a moment; you will be back.','#e07a5f')}
-  for(const f of p.feats){if(f.type==='tree'&&!f.paid&&G.t-f.born>6){f.paid=true;p.energy=Math.min(12,p.energy+1.5);say(p,'It grew. You feel more alive.','#81b29a')}}
+  if(!endsSeason&&p.energy<=0&&p.rest<=0){p.energy=0;p.rest=6;p.shieldDown=6;p.burnouts++;pts(p,-3,'burnout');announce(`${p.human&&p===G.me?'You':p.name} burned out and need${p.human&&p===G.me?'':'s'} a rest.`,'#e07a5f');say(p,'You burned out. Rest a moment; you will be back.','#e07a5f')}
+  for(const f of p.feats){if(f.type==='tree'&&!f.paid&&G.t-f.born>6){f.paid=true;energy(p,1.5);say(p,'It grew. You feel more alive.','#81b29a')}}
  }
  constrain(p=>!p.remote);
  if(G.t<G.dur){G.spawnT-=dt;if(G.spawnT<=0){spawn();const pr=G.t/G.dur;G.spawnT=(1.08-pr*0.48)*(0.75+Math.random()*0.5)}}
  for(const it of G.items){
   it.wob+=dt*14;
-  if(it.state==='in'||it.state==='pushed'){
+  if(it.state==='in'){
+   if(it.ign&&it.ignT!=null){it.ignT-=dt;if(it.ignT<=0)it.ign=null}
+   // after a No, friends look for someone who hasn't turned them down; heavy work looks for anyone
+   if(it.walls){if(it.seekT>0)it.seekT-=dt;else{
+    if(it.kind==='boss'&&!it.seeking){it.seeking=true;const sp=Math.hypot(it.vx,it.vy)||1,v=KINDS.boss.speed*1.1;it.vx*=v/sp;it.vy*=v/sp}
+    let tg=null,bd=1e9;for(const q of G.planets){if(it.kind==='friend'&&it.noSet.includes(q.slot))continue;const d=Math.hypot(q.x-it.x,q.y-it.y);if(d<bd){bd=d;tg=q}}
+    if(tg){const a=Math.atan2(tg.y-it.y,tg.x-it.x),sp=Math.hypot(it.vx,it.vy),kk=Math.min(1,dt*1.3);it.vx+=(Math.cos(a)*sp-it.vx)*kk;it.vy+=(Math.sin(a)*sp-it.vy)*kk}}}
    let vx=it.vx,vy=it.vy;
    if(it.kind==='noise'){const n=Math.hypot(it.vx,it.vy)||1,w=Math.sin(it.wob)*30;vx+=-it.vy/n*w;vy+=it.vx/n*w}
    it.x+=vx*dt;it.y+=vy*dt;
-   if(it.state==='pushed'){const f=Math.exp(-0.5*dt);it.vx*=f;it.vy*=f;it.push-=dt;
-    if(it.push<=0){const h=it.from,a=Math.atan2(h.y-it.y,h.x-it.x),sp=KINDS.boss.speed*0.85;it.vx=Math.cos(a)*sp;it.vy=Math.sin(a)*sp;it.state='in';it.ign=null;it.homing=h}}
-   if(it.homing&&it.state==='in'){const h=it.homing,a=Math.atan2(h.y-it.y,h.x-it.x),sp=Math.hypot(it.vx,it.vy),k=Math.min(1,dt*1.5);it.vx+=(Math.cos(a)*sp-it.vx)*k;it.vy+=(Math.sin(a)*sp-it.vy)*k}
-   const ds=Math.hypot(it.x-sx,it.y-sy);
-   if(ds<SUN+it.r){
-    if(it.kind==='boss'){const nx=(it.x-sx)/ds,ny=(it.y-sy)/ds,dot=it.vx*nx+it.vy*ny;if(dot<0){it.vx-=2*dot*nx;it.vy-=2*dot*ny}it.x=sx+nx*(SUN+it.r+1);it.y=sy+ny*(SUN+it.r+1)}
-    else{it.state='gone';burst(it.x,it.y,'#ffcf7a',12,70);if(it.from){it.from.log.sunned++;say(it.from,'Into the sun. Gone for good.','#ffcf7a')}continue}
-   }
+   if(it.walls){if(it.x<it.r){it.x=it.r;it.vx=Math.abs(it.vx)}if(it.x>W-it.r){it.x=W-it.r;it.vx=-Math.abs(it.vx)}if(it.y<it.r){it.y=it.r;it.vy=Math.abs(it.vy)}if(it.y>H-it.r){it.y=H-it.r;it.vy=-Math.abs(it.vy)}}
+   // anything that hits the sun blows up
+   if(Math.hypot(it.x-sx,it.y-sy)<SUN+it.r){it.state='gone';explode(it.x,it.y);
+    if(it.kind==='friend'){pts(it.from||it.target,-1,'friend lost');announce(`"${it.label}" flew into the sun. Nobody answered it.`,'#f08aa0')}
+    else if(it.from){it.from.log.sunned++;say(it.from,it.kind==='boss'?'Into the sun. That work is gone for good.':'Into the sun. Gone for good.','#ffcf7a')}
+    continue}
    for(const p of G.planets){if(p===it.ign)continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
   }else if(it.state==='out'){it.x+=it.vx*dt;it.y+=it.vy*dt;it.fade-=dt*0.7;if(it.fade<=0)it.state='gone'}
   else if(it.state==='orbit'){const h=it.host;it.orbA+=dt*1.6;it.orbT-=dt;const rr=R+30;it.x=h.x+Math.cos(it.orbA)*rr;it.y=h.y+Math.sin(it.orbA)*rr;if(it.orbT<=0){it.state='gone';landOrbit(it)}}
  }
- G.items=G.items.filter(i=>i.state!=='gone'&&(i.state==='orbit'||i.state==='pushed'||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
+ G.items=G.items.filter(i=>i.state!=='gone'&&(i.state==='orbit'||i.walls||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
  fx(dt);
  let ti=0;for(let i=0;i<TIERS.length;i++)if(G.score>=TIERS[i][0])ti=i;
  if(ti>G.tierIdx){G.tierIdx=ti;G.tierPulse=1.2;ring();announce(`Your system is ${TIERS[ti][1]}!`,'#a8d5a2')}else if(ti<G.tierIdx)G.tierIdx=ti;
@@ -297,12 +327,13 @@ function update(dt){
  if(MODE==='solo'&&me.energy<=0){me.energy=0;finish('burnout');return}
  if(me.energy<3.5&&!G.tiredNote){G.tiredNote=true;note('Running on empty. Moving and turning get harder.','#f2cc8f')}
  if(me.energy>=5)G.tiredNote=false;
- if(G.t>=G.dur&&!G.items.some(i=>i.state==='orbit'||i.state==='pushed')&&(!G.items.some(i=>i.state==='in')||G.t>G.dur+6))finish('time');
+ if(G.t>=G.dur&&(!G.items.some(i=>i.state==='in'||i.state==='orbit')||G.t>G.dur+8))finish('time');
 }
 function fx(dt){
  G.floats.forEach(f=>{f.y-=16*dt;f.life-=dt});G.floats=G.floats.filter(f=>f.life>0);
  G.parts.forEach(q=>{q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=0.96;q.vy*=0.96;q.life-=dt});G.parts=G.parts.filter(q=>q.life>0);
  if(G.tierPulse>0)G.tierPulse-=dt;
+ G.booms.forEach(b=>b.life-=dt);G.booms=G.booms.filter(b=>b.life>0);
 }
 
 // ---- drawing ----
@@ -361,13 +392,13 @@ function drawPlanet(p){
 function drawAim(){
  const p=G.me;
  for(const it of G.items){
-  if(!(it.state==='in'||it.state==='pushed')||it.ign===p||it.kind==='friend')continue;
+  if(it.state!=='in'||it.ign===p)continue;
   const v=Math.hypot(it.vx,it.vy)||1,dx=it.vx/v,dy=it.vy/v,ox=it.x-p.x,oy=it.y-p.y,Rc=R+12+it.r;
   const b=ox*dx+oy*dy,c=ox*ox+oy*oy-Rc*Rc,disc=b*b-c;if(disc<0)continue;const t=-b-Math.sqrt(disc);if(t<0||t>240)continue;
   const cxp=ox+dx*t,cyp=oy+dy*t,ang=Math.atan2(cyp,cxp);if(faceAt(p,ang)!=='no')continue;
-  const nx=Math.cos(ang),ny=Math.sin(ang),dot=dx*nx+dy*ny,rx=dx-2*dot*nx,ry=dy-2*dot*ny,L=it.kind==='boss'?0.19*Math.min(W,H)*2.1:220;
+  const nx=Math.cos(ang),ny=Math.sin(ang),dot=dx*nx+dy*ny,rx=dx-2*dot*nx,ry=dy-2*dot*ny,L=it.kind==='boss'?260:it.kind==='friend'?160:220;
   const x0=p.x+cxp,y0=p.y+cyp,a=1-t/240;
-  ctx.strokeStyle=it.kind==='boss'?`rgba(159,179,239,${0.65*a})`:`rgba(224,122,95,${0.4*a})`;ctx.lineWidth=2;ctx.setLineDash([4,6]);
+  ctx.strokeStyle=it.kind==='boss'?`rgba(159,179,239,${0.65*a})`:it.kind==='friend'?`rgba(240,138,160,${0.55*a})`:`rgba(224,122,95,${0.4*a})`;ctx.lineWidth=2;ctx.setLineDash([4,6]);
   ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+rx*L,y0+ry*L);ctx.stroke();ctx.setLineDash([]);
  }
 }
@@ -383,6 +414,7 @@ function draw(){
  const sb=ctx.createRadialGradient(sx-SUN*0.3,sy-SUN*0.3,SUN*0.1,sx,sy,SUN);sb.addColorStop(0,'#fff1c4');sb.addColorStop(1,'#f0a54a');ctx.fillStyle=sb;ctx.beginPath();ctx.arc(sx,sy,SUN*(1+0.03*Math.sin(G.t*2)),0,TAU);ctx.fill();
  for(const p of G.planets)drawPlanet(p);
  drawAim();
+ for(const b of G.booms){const k=1-b.life/0.7;ctx.globalAlpha=Math.max(0,b.life/0.7);ctx.strokeStyle='#ffcf7a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(b.x,b.y,8+k*55,0,TAU);ctx.stroke();ctx.fillStyle='rgba(255,241,196,.5)';ctx.beginPath();ctx.arc(b.x,b.y,Math.max(0,14*(1-k*1.6)),0,TAU);ctx.fill()}ctx.globalAlpha=1;
  for(const q of G.parts){ctx.globalAlpha=clamp(q.life*1.4,0,1);ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,TAU);ctx.fill()}ctx.globalAlpha=1;
  for(const it of G.items){
   ctx.globalAlpha=it.fade!=null?Math.max(0,it.fade):1;const hr=it.r+5;
@@ -393,10 +425,10 @@ function draw(){
   ctx.globalAlpha=1;
  }
  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 16px -apple-system,Segoe UI,sans-serif';
- for(const f of G.floats){ctx.globalAlpha=Math.min(1,f.life);ctx.fillStyle=f.col;ctx.fillText(f.text,clamp(f.x,30,W-30),f.y);ctx.globalAlpha=1}
+ for(const f of G.floats){ctx.globalAlpha=Math.min(1,f.life);ctx.fillStyle=f.col;ctx.font=f.small?'700 13px -apple-system,Segoe UI,sans-serif':'800 15px -apple-system,Segoe UI,sans-serif';ctx.textAlign=f.small?'left':'center';ctx.fillText(f.text,clamp(f.x,f.small?10:70,W-(f.small?90:70)),f.y);ctx.globalAlpha=1}
 }
 function hud(){
- $('en').style.width=Math.max(0,G.me.energy/12*100)+'%';
+ $('en').style.width=Math.max(0,G.me.energy/12*100)+'%';$('env').textContent=Math.max(0,Math.round(G.me.energy*10)/10);
  $('se').style.width=Math.min(100,G.t/G.dur*100)+'%';
  const f=G.score,fe=$('flv');if(fe.textContent!=String(f)){fe.textContent=f;fe.animate&&fe.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:250})}
  let cur=0;for(let i=0;i<TIERS.length;i++)if(f>=TIERS[i][0])cur=i;
@@ -423,6 +455,8 @@ function applyEvents(ev){
   else if(e[0]==='b')burst(e[1],e[2],e[3],e[4],e[5],true);
   else if(e[0]==='f')floatText(e[1],e[2],e[3],e[4],true);
   else if(e[0]==='r'){G.tierPulse=1.2;ring(true)}
+  else if(e[0]==='x')explode(e[1],e[2],true);
+  else if(e[0]==='g'){if(e[1]===NET.slot)G.floats.push({x:e[2],y:e[3],text:e[4],col:'#f2cc8f',life:1.4,small:true})}
  }
 }
 function onState(m){
@@ -518,7 +552,7 @@ window.addEventListener('keyup',e=>{if(G)G.keys[e.key]=false});
 // ---- end of season ----
 function summarize(why){
  const c=(p,n)=>p.feats.filter(f=>n.includes(f.type)).length;
- return {why,score:G.score,mode:MODE,planets:G.planets.map(p=>({slot:p.slot,name:p.name,human:p.human,trees:c(p,['tree']),homes:c(p,['house']),buildings:c(p,['office','tower']),clutter:c(p,['clutter']),burnouts:p.burnouts,log:p.log}))};
+ return {why,score:G.score,mode:MODE,planets:G.planets.map(p=>({slot:p.slot,name:p.name,human:p.human,trees:c(p,['tree']),homes:c(p,['house']),buildings:c(p,['office','tower']),clutter:c(p,['clutter']),burnouts:p.burnouts,log:p.log,ptsBy:p.ptsBy}))};
 }
 function finish(why){
  G.over=true;if(SIM)return;draw();
@@ -539,18 +573,21 @@ function renderEnd(sum,mySlot){
  else if(L.handGood>=3)story='A real team. You bounced the noise into empty space and passed work to whoever had room.';
  else if(L.handGood>=1)story='You found the pass. Next season, try lining up a teammate before the heavy stuff arrives.';
  else story='Three planets, side by side. Everyone handled their own sky. Heavy things bounce better when someone is ready to catch them.';
+ const pb=Object.entries(me.ptsBy||{}).filter(e=>e[1]).sort((a,b)=>b[1]-a[1]),myTotal=pb.reduce((a,e)=>a+e[1],0);
+ const breakdown=pb.length?`<p class="small" style="margin-top:12px"><b>Where Your Planet's Points Came From</b></p><div class="stats">${pb.map(([k,v])=>`<span>${PTSNAME[k]||k}</span><b class="${v>0?'plus':'minus'}">${v>0?'+':''}${v}</b>`).join('')}<span><b>Your planet's total</b></span><b>${myTotal}</b></div><p class="small muted">Your teammates' planets made up the rest of the team's ${fv}.</p>`:'';
  const hostName=(NET.players.find(p=>p.id===NET.hostId)||{}).name||'the host';
  const buttons=solo?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="home">Home</button></div>`
   :isHost()?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="toroom">Back to Room</button><button class="btn ghost" id="leave3">Leave Room</button></div>`
   :`<p class="small muted">Waiting for ${esc(hostName)} to start the next season.</p><button class="btn ghost" id="leave2">Leave Room</button>`;
  $('endpanel').innerHTML=`<p class="small muted">${sum.why==='burnout'?'Out of energy. The season ended early.':sum.why==='stopped'?'The host ended the season early.':'The season is over.'}</p><h2>Your System: ${tier(fv)}</h2><p><b>${fv} team points</b>. ${isBest?(best==null?'Your first season like this.':'Your best season yet.'):`Your best so far: ${best}.`}</p><p>${story}</p>
+  ${breakdown}
   <div class="stats"><span>Bounced off your shield</span><b>${L.no}</b><span>Caught at your dock</span><b>${L.neg}</b><span>Accepted whole</span><b>${L.bare}</b><span>Work handed to a teammate with room</span><b>${L.handGood}</b><span>Work handed to a tired teammate</span><b>${L.handStrained}</b><span>Noise you bounced onto a teammate</span><b>${L.passedNoise}</b><span>Noise you sent into the sun</span><b>${L.sunned}</b><span>Burnouts across the team</span><b>${burn}</b></div>
   <p class="small muted">${sum.planets.map(desc).join(' ')}</p>
   <hr><p class="small"><b>What You Were Practising</b></p>
   <p class="small muted"><b style="color:var(--no)">The Shield</b> is a Clean No: decline early, without a paragraph of apology. Light things bounce. Heavy things don't.</p>
   <p class="small muted"><b style="color:var(--neg)">The Dock</b> is a Negotiated Yes: "Yes, Thursday instead of Tuesday." You name your capacity and the request shrinks to fit.</p>
   <p class="small muted"><b style="color:var(--yes)">Open Ground</b> is a Trusting Yes: it costs energy now, but when it fits the life you want, it leaves you more alive.</p>
-  <p class="small muted"><b style="color:#9fb3ef">The Pass</b> is Hand It Off: a No can send work to someone better placed to say yes. It works when you aim it at someone with room, and when it's work, not noise or a friend asking for you.</p>
+  <p class="small muted"><b style="color:#9fb3ef">The Pass</b> is Hand It Off: a No can send work to someone better placed to say yes. It works when you aim it at someone with room. A friend you bounce asks someone else, but they'd rather have heard yes from you.</p>
   ${buttons}`;
  hideAll();$('end').classList.remove('hidden');
  const on=(id,f)=>{const b=$(id);if(b)b.onclick=f};
@@ -583,8 +620,11 @@ function openQuit(){
 }
 function closeQuit(){$('quit').classList.add('hidden');if(G)G.paused=false}
 function doQuit(){closeQuit();if(!G||G.over)return;if(MODE==='solo'){G.over=true;showIntro('')}else if(MODE==='host')finish('stopped');else leaveRoom()}
+function openRules(){$('rules').classList.remove('hidden');if(G&&!G.over&&MODE==='solo')G.paused=true;$('rclose').focus()}
+function closeRules(){$('rules').classList.add('hidden');if(G&&$('quit').classList.contains('hidden'))G.paused=false}
+$('rulesbtn').onclick=openRules;$('rules2').onclick=openRules;$('rclose').onclick=closeRules;
 $('exitbtn').onclick=openQuit;$('qstay').onclick=closeQuit;$('qgo').onclick=doQuit;
-window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('quit').classList.contains('hidden'))closeQuit();else openQuit()});
+window.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('rules').classList.contains('hidden')){closeRules();return}if(!$('quit').classList.contains('hidden'))closeQuit();else openQuit()});
 const CODECH='ABCDEFGHJKLMNPQRSTUVWXYZ';
 $('solo').onclick=startSolo;
 $('create').onclick=()=>{let c='';for(let i=0;i<4;i++)c+=CODECH[Math.floor(Math.random()*CODECH.length)];joinRoom(c)};
