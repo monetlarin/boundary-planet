@@ -1,0 +1,29 @@
+# Boundary Planet
+# Serves the game at access.tesseros.com/boundary-planet/ and runs the multiplayer rooms.
+name = "boundary-planet"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# No public *.workers.dev address; the game lives on access.tesseros.com.
+workers_dev = false
+
+# Only /boundary-planet... comes here. Everything else on access.tesseros.com
+# (Perspective Flip) still goes to the perspective-flip-gate Worker, because
+# Cloudflare sends each request to the most specific matching route.
+routes = [
+  { pattern = "access.tesseros.com/boundary-planet*", zone_name = "tesseros.com" }
+]
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+# One Room per room code. SQLite-backed, so it runs on the Workers Free plan.
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

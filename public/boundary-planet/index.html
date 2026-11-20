@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Boundary Planet</title>
+<style>
+:root{--bg:#141b2e;--ink:#f4ede1;--muted:#a9b0c4;--no:#e07a5f;--neg:#f2cc8f;--yes:#81b29a;--panel:#1d2640;--line:#2e3a5c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+canvas{display:block;touch-action:none;cursor:grab}
+.hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;font-size:.85rem;pointer-events:none;flex-wrap:wrap}
+.meter{display:flex;align-items:center;gap:6px}
+.meter .bar{width:90px;height:8px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.meter .bar div{height:100%;transition:width .3s}
+.overlay{position:fixed;inset:0;display:flex;padding:18px;background:rgba(20,27,46,.92);overflow:auto}
+.panel{max-width:560px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 24px;margin:auto}
+h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:600;margin:.1em 0 .4em}
+h1{font-size:2rem}h2{font-size:1.5rem}
+p{line-height:1.55;margin:.45em 0}
+.muted{color:var(--muted)}.small{font-size:.86rem}
+.legend,.controls{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;align-items:center;margin:12px 0;font-size:.92rem}
+.controls b{white-space:nowrap}
+.sw{width:16px;height:16px;border-radius:4px}
+.btn{appearance:none;border:0;background:var(--ink);color:var(--bg);font:inherit;font-weight:700;padding:11px 20px;border-radius:12px;cursor:pointer;min-height:44px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,input:focus-visible{outline:3px solid var(--neg);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+input{font:inherit;font-size:16px;background:#141b2e;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+#code{width:8.5em;text-transform:uppercase;letter-spacing:.12em}
+.hidden{display:none!important}
+.caption{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:88vw;text-align:center;font-family:Georgia,serif;font-size:.95rem;padding:8px 14px;border-radius:10px;background:rgba(29,38,64,.85);border:1px solid var(--line);opacity:0;transition:opacity .35s;pointer-events:none}
+.caption.show{opacity:1}
+.pts b{font-size:1.6rem;font-family:Georgia,serif;color:var(--yes);min-width:34px;text-align:right}
+.pts>span{color:var(--muted);margin-right:4px}
+.tierbox{display:flex;flex-direction:column;gap:2px;font-size:.75rem}
+.tierbox #tierl{font-weight:700}
+.nextl{color:var(--muted);font-size:.7rem}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:.92rem;margin:10px 0}
+.roomcode{font-family:Georgia,serif;font-size:2.6rem;letter-spacing:.18em;margin:.1em 0}
+.seats{display:grid;gap:8px;margin:12px 0}
+.seat{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}
+.dot{width:14px;height:14px;border-radius:50%;flex:none}
+.err{color:var(--no)}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="hud" id="hud">
+ <div class="meter">Season<div class="bar"><div id="se" style="background:#a9b0c4"></div></div></div>
+ <div class="meter">Your Energy<div class="bar"><div id="en" style="background:var(--neg)"></div></div></div>
+ <div class="meter pts"><b id="flv">0</b><span>team pts</span><div class="tierbox"><span id="tierl">Bare Rock</span><div class="bar"><div id="fl" style="background:var(--yes)"></div></div><span id="nextl" class="nextl"></span></div></div>
+</div>
+<div id="caption" class="caption"></div>
+
+<div class="overlay" id="intro"><div class="panel">
+ <h1>Boundary Planet</h1>
+ <p>Requests fly at a little solar system of three planets. Yours is one of them. <b>Move</b> your planet and <b>spin</b> it so the right side meets each request. Something that bounces off your shield flies away, and it might land on a teammate.</p>
+ <div class="legend">
+  <div class="sw" style="background:var(--no)"></div><div><b>No.</b> A shield. Bounces a request away. Where it goes next depends on the angle.</div>
+  <div class="sw" style="background:var(--neg)"></div><div><b>Negotiate.</b> A dock. Catches a request, shrinks it, and lands it later.</div>
+  <div class="sw" style="background:var(--yes)"></div><div><b>Yes.</b> Open ground. Whatever lands is accepted whole.</div>
+ </div>
+ <div class="controls">
+  <b>Move</b><span>Drag your planet, or use WASD.</span>
+  <b>Spin</b><span>Drag anywhere else in the sky, or use the arrow keys (Q and E work too).</span>
+ </div>
+ <p class="small muted">Senders: <b>Noise</b> 🔔, <b>Friends</b> ☕ and heavy <b>Boss</b> requests 📅. Heavy work won't bounce away, but you can aim it at a teammate who has room. The whole team scores together.</p>
+ <hr>
+ <div class="row"><label class="small" for="nm">Your Name</label><input id="nm" maxlength="16" autocomplete="nickname" placeholder="Your name"></div>
+ <div class="row"><button class="btn" id="solo">Play Solo</button><button class="btn ghost" id="create">Create Room</button></div>
+ <div class="row"><input id="code" maxlength="6" placeholder="CODE" autocomplete="off" aria-label="Room code"><button class="btn ghost" id="join">Join Room</button></div>
+ <p id="neterr" class="small err"></p>
+ <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.5 · One season, about two minutes</p>
+</div></div>
+
+<div class="overlay hidden" id="room"><div class="panel">
+ <p class="small muted">Room Code</p>
+ <div class="roomcode" id="rcode"></div>
+ <div class="row"><input id="rlink" readonly aria-label="Room link" style="flex:1;min-width:0"><button class="btn ghost" id="copy">Copy Link</button></div>
+ <div class="seats" id="seats"></div>
+ <p id="rmsg" class="small muted"></p>
+ <div class="row"><button class="btn" id="go">Start Season</button><button class="btn ghost" id="leave">Leave Room</button></div>
+</div></div>
+
+<div class="overlay hidden" id="end"><div class="panel" id="endpanel"></div></div>
+<script>
+{
+const SIM=!!window.__SIM;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),$=id=>document.getElementById(id);
+const TAU=Math.PI*2,norm=a=>((a%TAU)+TAU)%TAU;
+const adiff=(a,b)=>{let d=norm(a)-norm(b);if(d>Math.PI)d-=TAU;if(d<-Math.PI)d+=TAU;return d};
+const rnd=a=>a[Math.floor(Math.random()*a.length)],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const r1=v=>Math.round(v*10)/10,r3=v=>Math.round(v*1000)/1000;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+
+// MODE: solo (this browser runs everything), host (runs the game for a room), client (draws what the host sends)
+let MODE='solo',W=0,H=0,SW=0,SH=0,VS=1,VX=0,VY=0,R,SUN,IS,dpr,sx,sy,G=null;
+const MPW=1200,MPH=780;
+function resize(){
+ const oW=W,oH=H;dpr=window.devicePixelRatio||1;SW=window.innerWidth;SH=window.innerHeight;
+ cv.width=SW*dpr;cv.height=SH*dpr;cv.style.width=SW+'px';cv.style.height=SH+'px';
+ if(MODE==='solo'){W=SW;H=SH;VS=1;VX=0;VY=0}
+ else{W=MPW;H=MPH;VS=Math.min(SW/W,(SH-44)/H);VX=(SW-W*VS)/2;VY=44+(SH-44-H*VS)/2}
+ R=Math.max(22,Math.min(W,H)*0.056);SUN=R*0.85;IS=clamp(R/42,0.7,1.15);sx=W/2;sy=H/2+14;
+ if(G&&oW&&MODE==='solo'&&(oW!==W||oH!==H)){for(const p of G.planets){p.x*=W/oW;p.y*=H/oH;p.tx*=W/oW;p.ty*=H/oH}}
+}
+resize();window.addEventListener('resize',resize);
+
+const TIERS=[[-999,'Bare Rock'],[25,'Sprouting'],[60,'Growing'],[110,'Flourishing'],[170,'Thriving']];
+function tier(v){let t=TIERS[0][1];for(const [n,l] of TIERS)if(v>=n)t=l;return t}
+const FACES=[{id:'no',c:'#e07a5f',center:0,width:1.35,label:'No'},{id:'neg',c:'#f2cc8f',center:Math.PI,width:1.2,label:'Negotiate'}];
+const KN=['noise','friend','boss'],STN=['in','pushed','out','orbit'];
+const KINDS={
+ noise:{r:10,speed:80,labels:[['Ping','🔔'],['Free webinar!','📣'],['New notification','📱'],['Quick q?','❓'],['Sale ends today','🏷️'],['Reply-all','📧'],['Did you see this?','👀']]},
+ friend:{r:13,speed:44,labels:[['Coffee?','☕'],['Help me move?','📦'],['Birthday dinner','🎂'],['Long walk?','🚶'],['Can we talk?','💬'],['Game night','🎲']]},
+ boss:{r:17,speed:50,labels:[['New deadline','📅'],['Extra project','📁'],['Urgent client','🚨'],['Weekend shift','🗓️'],['Scope creep','📈']]}};
+const POLICY={
+ steady:(p,k)=>k==='noise'?'no':k==='friend'?(p.energy>3?'yes':'neg'):(p.energy>6?'neg':'no'),
+ eager:(p,k)=>k==='noise'?'no':k==='friend'?'yes':(p.energy>5?'yes':'neg')};
+// Three seats. A seat nobody sits in is played by the computer.
+const SEATS=[{col:'#8fa27a',col2:'#3c4a3a',ai:'Fern',policy:'steady',skill:0.85,dot:'#8fa27a'},
+ {col:'#88a9c2',col2:'#2f4459',ai:'Juno',policy:'steady',skill:0.8,dot:'#88a9c2'},
+ {col:'#c9a07f',col2:'#5a4034',ai:'Ash',policy:'eager',skill:0.72,dot:'#c9a07f'}];
+function homes(){return W<H*0.8?[[0.28,0.74],[0.5,0.24],[0.74,0.56]]:[[0.27,0.68],[0.5,0.24],[0.74,0.64]]}
+
+function mkPlanet(slot,seat){
+ const S=SEATS[slot],h=homes()[slot];
+ return {slot,name:seat.name||S.ai,human:!!seat.human,remote:!!seat.remote,hx:h[0],hy:h[1],x:h[0]*W,y:h[1]*H,tx:h[0]*W,ty:h[1]*H,
+  rot:slot===0?-Math.PI/2:Math.random()*TAU,energy:10,feats:[],fv:0,shieldDown:0,cracks:0,rest:0,col:S.col,col2:S.col2,policy:S.policy,skill:S.skill,
+  phase:Math.random()*9,burnouts:0,recent:[],log:{no:0,neg:0,bare:0,handGood:0,handStrained:0,passedNoise:0,sunned:0}};
+}
+// roster: one entry per seat {name,human,remote}; me: the seat this browser controls
+function newGame(roster,me){
+ G={t:0,dur:120,items:[],floats:[],parts:[],ev:[],nid:1,score:0,tierIdx:0,tierPulse:0,spawnT:0.3,over:false,last:performance.now(),keys:{},kbMove:false,tiredNote:false,
+  planets:roster.map((s,i)=>mkPlanet(i,s))};
+ G.me=G.planets[me];seenNotes.clear();
+}
+const soloRoster=()=>[{name:'You',human:true},{},{}];
+function turnFactor(p){return 0.35+0.65*Math.min(1,p.energy/8)}
+function faceAt(p,worldAng){
+ const rel=norm(worldAng-p.rot);
+ for(const f of FACES){if(f.id==='no'&&p.shieldDown>0)continue;if(f.id==='neg'&&p.rest>0)continue;if(Math.abs(adiff(rel,f.center))<f.width/2)return f.id}
+ return 'bare';
+}
+function edgeDist(x,y,a){const c=Math.cos(a),s=Math.sin(a);let t=1e9;if(c>1e-3)t=Math.min(t,(W-x)/c);if(c<-1e-3)t=Math.min(t,-x/c);if(s>1e-3)t=Math.min(t,(H-y)/s);if(s<-1e-3)t=Math.min(t,-y/s);return t}
+function pickAngle(tgt,r){
+ const toSun=Math.atan2(sy-tgt.y,sx-tgt.x),dSun=Math.hypot(sx-tgt.x,sy-tgt.y),block=Math.asin(Math.min(1,(SUN+r+16)/dSun))+0.12;
+ const others=G.planets.filter(q=>q!==tgt).map(q=>[Math.atan2(q.y-tgt.y,q.x-tgt.x),Math.asin(Math.min(1,(R+r+20)/Math.max(1,Math.hypot(q.x-tgt.x,q.y-tgt.y))))]);
+ const taken=G.items.filter(i=>i.state==='in'&&i.target===tgt).map(i=>Math.atan2(i.y-tgt.y,i.x-tgt.x)).concat(tgt.recent);
+ let best=null,bd=-1;
+ for(let k=0;k<18;k++){const a=Math.random()*TAU;if(Math.abs(adiff(a,toSun))<block)continue;if(others.some(([oa,ob])=>Math.abs(adiff(a,oa))<ob))continue;
+  const d=taken.length?Math.min(...taken.map(t=>Math.abs(adiff(a,t)))):9;if(d>bd){bd=d;best=a}}
+ if(best==null)best=toSun+Math.PI;
+ tgt.recent=[best].concat(tgt.recent).slice(0,3);return best;
+}
+function spawn(){
+ const prog=G.t/G.dur,r=Math.random(),kind=r<0.48?'noise':r<0.74?'friend':'boss',k=KINDS[kind];
+ // people get a little more traffic than computer teammates
+ const wts=G.planets.map(p=>p.human?1.25:1),tot=wts.reduce((a,b)=>a+b,0);let q=Math.random()*tot,tgt=G.planets[0];
+ for(let i=0;i<wts.length;i++){if(q<wts[i]){tgt=G.planets[i];break}q-=wts[i]}
+ const rr=k.r*IS*0.85,a=pickAngle(tgt,rr),D=edgeDist(tgt.x,tgt.y,a)+rr+24;
+ const sp=k.speed*(1+prog*0.4)*(0.9+Math.random()*0.2),L=rnd(k.labels);
+ G.items.push({id:G.nid++,kind,label:L[0],icon:L[1],r:rr,x:tgt.x+Math.cos(a)*D,y:tgt.y+Math.sin(a)*D,vx:-Math.cos(a)*sp,vy:-Math.sin(a)*sp,state:'in',wob:Math.random()*10,target:tgt,from:null,ign:null});
+}
+
+// ---- messages and effects (the host forwards them to the other players) ----
+const seenNotes=new Set();
+function caption(text,col){if(SIM)return;const c=$('caption');c.textContent=text;c.style.color=col||'#f4ede1';c.classList.add('show');clearTimeout(c._h);c._h=setTimeout(()=>c.classList.remove('show'),2600)}
+function note(text,col){if(seenNotes.has(text))return;seenNotes.add(text);caption(text,col)}
+function say(p,text,col){if(!p||!G)return;if(p===G.me)note(text,col);else if(MODE==='host'&&p.remote)G.ev.push(['n',p.slot,text,col])}
+function announce(text,col){caption(text,col);if(MODE==='host')G.ev.push(['c',text,col])}
+function burst(x,y,col,n,spd,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['b',r1(x),r1(y),col,n,spd]);for(let i=0;i<n;i++){const a=Math.random()*TAU,v=(spd||60)*(0.4+Math.random());G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:0.7+Math.random()*0.5,col,size:1.5+Math.random()*2.5})}}
+function floatText(x,y,text,col,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['f',r1(x),r1(y),text,col]);G.floats.push({x,y,text,col,life:0.9})}
+function ring(local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['r']);for(const p of G.planets)for(let k=0;k<24;k++){const a=k/24*TAU;burst(p.x+Math.cos(a)*(R+6),p.y+Math.sin(a)*(R+6),'#a8d5a2',1,110,true)}}
+function pts(p,n){G.score+=n;floatText(p.x+(Math.random()-0.5)*24,p.y-R-40,(n>0?'+':'')+n,n>0?'#81b29a':'#e07a5f')}
+const FEATCOL={tree:'#a8d5a2',house:'#f2cc8f',office:'#9fb3ef',tower:'#9fb3ef',clutter:'#8f8a78'};
+function addFeat(p,worldAng,type,size){p.feats.push({ang:norm(worldAng-p.rot),type,size:size||1,born:G.t});p.fv++;burst(p.x+Math.cos(worldAng)*(R+4),p.y+Math.sin(worldAng)*(R+4),FEATCOL[type],type==='tree'?14:8,type==='tree'?70:50)}
+
+// ---- the rules ----
+// A boss request caught by someone other than the planet that bounced it is a hand-off.
+function handoff(p,passer){
+ if(p.energy>=5){pts(p,2);passer.log.handGood++;say(passer,`Handed off. ${p.name} had room for it.`,'#81b29a');say(p,`${passer.name} handed you some work.`,'#9fb3ef')}
+ else{p.energy-=1.5;pts(p,-1);passer.log.handStrained++;say(passer,`${p.name} was already stretched.`,'#e07a5f');say(p,`${passer.name} passed you work while you were tired.`,'#e07a5f')}
+}
+function impact(it,p){
+ const ang=Math.atan2(it.y-p.y,it.x-p.x),face=faceAt(p,ang),k=it.kind,passer=it.from&&it.from!==p?it.from:null;
+ p.log[face]++;
+ if(face==='no'){
+  const nx=Math.cos(ang),ny=Math.sin(ang),dot=it.vx*nx+it.vy*ny;
+  let vx=it.vx-2*dot*nx,vy=it.vy-2*dot*ny;if(vx*nx+vy*ny<=0){const s=Math.hypot(it.vx,it.vy);vx=nx*s;vy=ny*s}
+  const s=Math.hypot(vx,vy)||1;it.from=p;it.ign=p;it.homing=null;
+  if(k==='noise'){it.vx=vx*1.3;it.vy=vy*1.3;pts(p,1);say(p,'Bounced. Watch where it goes.','#e07a5f')}
+  else if(k==='friend'){it.vx=vx*0.9;it.vy=vy*0.9;it.state='out';it.fade=1;pts(p,-1);say(p,'Bounced a friend. A little lonelier. Friends asked for you, so they drift off.','#f08aa0')}
+  else{const v0=0.19*Math.min(W,H);it.vx=vx/s*v0;it.vy=vy/s*v0;it.state='pushed';it.push=2.8;p.cracks++;
+   if(p.cracks>=3){p.shieldDown=5;p.cracks=0;say(p,'Shield cracked. Give it a moment.','#e07a5f')}
+   else say(p,"Too heavy to bounce away. Aim it at a teammate, or it comes back.",'#9fb3ef')}
+  return;
+ }
+ if(face==='neg'){
+  if(k==='boss'&&passer)handoff(p,passer);
+  it.state='orbit';it.host=p;it.orbA=ang;it.orbT=k==='boss'?3.2:2.4;it.r*=0.65;
+  if(k==='boss'){p.energy-=1;say(p,"Caught. It'll land smaller, later.",'#f2cc8f')}
+  else if(k==='friend')say(p,'Caught. A visit, on your terms.','#f2cc8f');
+  else say(p,'Caught some noise. Still clutter.','#c9c3a0');
+  return;
+ }
+ it.state='gone';
+ if(k==='friend'){p.energy-=0.5;addFeat(p,ang,'tree',1.15);pts(p,3);say(p,'Accepted. Something will grow.','#81b29a')}
+ else if(k==='boss'){if(passer)handoff(p,passer);p.energy-=3;addFeat(p,ang,'tower',1.2);pts(p,1);say(p,'Accepted, all of it. That was heavy.','#9fb3ef')}
+ else{addFeat(p,ang,'clutter',0.6);pts(p,-1);
+  if(passer){passer.log.passedNoise++;say(passer,`You bounced noise onto ${p.name}.`,'#c9c3a0');say(p,`${passer.name} bounced noise onto you.`,'#c9c3a0')}
+  else say(p,'You let the noise in.','#c9c3a0')}
+}
+function landOrbit(it){
+ const p=it.host,ang=it.orbA;
+ if(it.kind==='boss'){addFeat(p,ang,'office',0.9);pts(p,2)}
+ else if(it.kind==='friend'){addFeat(p,ang,'house',0.9);pts(p,2)}
+ else{addFeat(p,ang,'clutter',0.4);pts(p,-1)}
+}
+// Computer teammates turn toward the most urgent request and answer by personality.
+function aiThink(p,dt){
+ if(p.rest>0)return;
+ let best=null,bt=1e9;
+ for(const it of G.items){
+  if(!(it.state==='in'||it.state==='pushed')||it.ign===p)continue;
+  const dx=p.x-it.x,dy=p.y-it.y,d=Math.hypot(dx,dy),v=Math.hypot(it.vx,it.vy)||1,closing=(it.vx*dx+it.vy*dy)/d;
+  if(closing<=5)continue;if(Math.abs(it.vx*dy-it.vy*dx)/v>R+26+it.r)continue;
+  const t=(d-R)/closing;if(t<bt){bt=t;best=it}
+ }
+ if(!best)return;
+ let want=POLICY[p.policy](p,best.kind);if(want==='no'&&p.shieldDown>0)want='neg';
+ const ta=Math.atan2(best.y-p.y,best.x-p.x);
+ const fc=want==='no'?0:want==='neg'?Math.PI:(Math.abs(adiff(ta-p.rot,Math.PI/2))<Math.abs(adiff(ta-p.rot,-Math.PI/2))?Math.PI/2:-Math.PI/2);
+ const d=adiff(ta-fc,p.rot),mx=2.4*p.skill*turnFactor(p)*dt;p.rot+=clamp(d,-mx,mx);
+}
+// Your own planet: keyboard spin and movement toward its target. Runs on every screen.
+function controlMe(dt){
+ const me=G.me,K=G.keys;
+ const kd=(K.ArrowRight||K.e||K.E?1:0)-(K.ArrowLeft||K.q||K.Q?1:0);if(kd)me.rot+=kd*3.6*turnFactor(me)*dt;
+ const mx=(K.d||K.D?1:0)-(K.a||K.A?1:0),my=(K.s||K.S||K.ArrowDown?1:0)-(K.w||K.W||K.ArrowUp?1:0);
+ if(mx||my){const m=Math.hypot(mx,my);me.tx=me.x+mx/m*60;me.ty=me.y+my/m*60;G.kbMove=true}else if(G.kbMove){me.tx=me.x;me.ty=me.y;G.kbMove=false}
+}
+function stepToward(p,dt){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);if(d>0.5){const step=Math.min(d,(p.human?260:60)*(0.5+0.5*turnFactor(p))*dt);p.x+=dx/d*step;p.y+=dy/d*step}}
+// planets keep their distance from each other, the sun, and the edge
+function constrain(movable){
+ const P=G.planets;
+ for(let i=0;i<P.length;i++)for(let j=i+1;j<P.length;j++){const a=P[i],b=P[j],ma=movable(a),mb=movable(b);if(!ma&&!mb)continue;
+  const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,mn=2*R+34;if(d<mn){const s=(mn-d)/(ma&&mb?2:1);if(ma){a.x-=dx/d*s;a.y-=dy/d*s}if(mb){b.x+=dx/d*s;b.y+=dy/d*s}}}
+ for(const p of P){if(!movable(p))continue;const dx=p.x-sx,dy=p.y-sy,d=Math.hypot(dx,dy)||1,mn=SUN+R+30;if(d<mn){p.x=sx+dx/d*mn;p.y=sy+dy/d*mn}
+  p.x=clamp(p.x,R+16,W-R-16);p.y=clamp(p.y,R+(MODE==='solo'?56:16),H-R-34)}
+}
+function update(dt){
+ G.t+=dt;controlMe(dt);if(SIM)aiThink(G.me,dt);
+ for(const p of G.planets){
+  if(!p.remote){if(!p.human){p.tx=p.hx*W+Math.sin(G.t*0.23+p.phase)*R*1.4;p.ty=p.hy*H+Math.cos(G.t*0.19+p.phase)*R*0.9;aiThink(p,dt)}stepToward(p,dt)}
+  if(p.shieldDown>0)p.shieldDown-=dt;
+  if(p.rest>0){p.rest-=dt;p.energy=Math.min(12,p.energy+dt*0.6)}else p.energy=Math.min(12,p.energy+dt*0.04);
+  const endsSeason=MODE==='solo'&&p===G.me;
+  if(!endsSeason&&p.energy<=0&&p.rest<=0){p.energy=0;p.rest=6;p.shieldDown=6;p.burnouts++;pts(p,-3);announce(`${p.human&&p===G.me?'You':p.name} burned out and need${p.human&&p===G.me?'':'s'} a rest.`,'#e07a5f');say(p,'You burned out. Rest a moment; you will be back.','#e07a5f')}
+  for(const f of p.feats){if(f.type==='tree'&&!f.paid&&G.t-f.born>6){f.paid=true;p.energy=Math.min(12,p.energy+1.5);say(p,'It grew. You feel more alive.','#81b29a')}}
+ }
+ constrain(p=>!p.remote);
+ if(G.t<G.dur){G.spawnT-=dt;if(G.spawnT<=0){spawn();const pr=G.t/G.dur;G.spawnT=(1.08-pr*0.48)*(0.75+Math.random()*0.5)}}
+ for(const it of G.items){
+  it.wob+=dt*14;
+  if(it.state==='in'||it.state==='pushed'){
+   let vx=it.vx,vy=it.vy;
+   if(it.kind==='noise'){const n=Math.hypot(it.vx,it.vy)||1,w=Math.sin(it.wob)*30;vx+=-it.vy/n*w;vy+=it.vx/n*w}
+   it.x+=vx*dt;it.y+=vy*dt;
+   if(it.state==='pushed'){const f=Math.exp(-0.5*dt);it.vx*=f;it.vy*=f;it.push-=dt;
+    if(it.push<=0){const h=it.from,a=Math.atan2(h.y-it.y,h.x-it.x),sp=KINDS.boss.speed*0.85;it.vx=Math.cos(a)*sp;it.vy=Math.sin(a)*sp;it.state='in';it.ign=null;it.homing=h}}
+   if(it.homing&&it.state==='in'){const h=it.homing,a=Math.atan2(h.y-it.y,h.x-it.x),sp=Math.hypot(it.vx,it.vy),k=Math.min(1,dt*1.5);it.vx+=(Math.cos(a)*sp-it.vx)*k;it.vy+=(Math.sin(a)*sp-it.vy)*k}
+   const ds=Math.hypot(it.x-sx,it.y-sy);
+   if(ds<SUN+it.r){
+    if(it.kind==='boss'){const nx=(it.x-sx)/ds,ny=(it.y-sy)/ds,dot=it.vx*nx+it.vy*ny;if(dot<0){it.vx-=2*dot*nx;it.vy-=2*dot*ny}it.x=sx+nx*(SUN+it.r+1);it.y=sy+ny*(SUN+it.r+1)}
+    else{it.state='gone';burst(it.x,it.y,'#ffcf7a',12,70);if(it.from){it.from.log.sunned++;say(it.from,'Into the sun. Gone for good.','#ffcf7a')}continue}
+   }
+   for(const p of G.planets){if(p===it.ign)continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
+  }else if(it.state==='out'){it.x+=it.vx*dt;it.y+=it.vy*dt;it.fade-=dt*0.7;if(it.fade<=0)it.state='gone'}
+  else if(it.state==='orbit'){const h=it.host;it.orbA+=dt*1.6;it.orbT-=dt;const rr=R+30;it.x=h.x+Math.cos(it.orbA)*rr;it.y=h.y+Math.sin(it.orbA)*rr;if(it.orbT<=0){it.state='gone';landOrbit(it)}}
+ }
+ G.items=G.items.filter(i=>i.state!=='gone'&&(i.state==='orbit'||i.state==='pushed'||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
+ fx(dt);
+ let ti=0;for(let i=0;i<TIERS.length;i++)if(G.score>=TIERS[i][0])ti=i;
+ if(ti>G.tierIdx){G.tierIdx=ti;G.tierPulse=1.2;ring();announce(`Your system is ${TIERS[ti][1]}!`,'#a8d5a2')}else if(ti<G.tierIdx)G.tierIdx=ti;
+ const me=G.me;
+ if(MODE==='solo'&&me.energy<=0){me.energy=0;finish('burnout');return}
+ if(me.energy<3.5&&!G.tiredNote){G.tiredNote=true;note('Running on empty. Moving and turning get harder.','#f2cc8f')}
+ if(me.energy>=5)G.tiredNote=false;
+ if(G.t>=G.dur&&!G.items.some(i=>i.state==='orbit'||i.state==='pushed')&&(!G.items.some(i=>i.state==='in')||G.t>G.dur+6))finish('time');
+}
+function fx(dt){
+ G.floats.forEach(f=>{f.y-=16*dt;f.life-=dt});G.floats=G.floats.filter(f=>f.life>0);
+ G.parts.forEach(q=>{q.x+=q.vx*dt;q.y+=q.vy*dt;q.vx*=0.96;q.vy*=0.96;q.life-=dt});G.parts=G.parts.filter(q=>q.life>0);
+ if(G.tierPulse>0)G.tierPulse-=dt;
+}
+
+// ---- drawing ----
+const stars=[...Array(140)].map(()=>({x:Math.random(),y:Math.random(),s:Math.random()*1.4+0.3}));
+function drawFeats(p){
+ for(const f of p.feats){
+  const a=f.ang+p.rot,age=G.t-f.born;
+  ctx.save();ctx.translate(p.x+Math.cos(a)*R*0.97,p.y+Math.sin(a)*R*0.97);ctx.rotate(a+Math.PI/2);
+  const s=f.size*Math.max(0.75,R/40),pop=age<0.45?1+0.5*Math.sin(age/0.45*Math.PI):1;
+  if(f.type==='tree'){
+   const g=clamp(age/4.5,0,1),sway=Math.sin(G.t*2+f.ang*7)*0.07*g;ctx.rotate(sway);
+   ctx.fillStyle='#6b4f3a';ctx.fillRect(-1.6*s,-12*s*g,3.2*s,12*s*g+1);
+   const cr=(2.5+6.5*g)*s;ctx.fillStyle=g<1?'#a8d5a2':'#6fae7a';ctx.beginPath();ctx.arc(0,-12*s*g-cr*0.6,cr,0,TAU);ctx.fill();
+   ctx.fillStyle='#5a9a66';ctx.beginPath();ctx.arc(-cr*0.55,-12*s*g-cr*0.2,cr*0.6,0,TAU);ctx.arc(cr*0.55,-12*s*g-cr*0.2,cr*0.6,0,TAU);ctx.fill();
+   if(age>6){ctx.globalAlpha=Math.min(1,(age-6)/1.5);ctx.fillStyle='#f6b8c8';[[-0.5,-0.9],[0.45,-1.1],[0,-1.5],[0.7,-0.5],[-0.75,-0.4]].forEach(([dx,dy])=>{ctx.beginPath();ctx.arc(dx*cr,-12*s*g+dy*cr,1.6*s,0,TAU);ctx.fill()});ctx.globalAlpha=1}
+  }else if(f.type==='house'){
+   ctx.scale(pop,pop);ctx.fillStyle='#f2cc8f';ctx.fillRect(-6*s,-9*s,12*s,9*s);ctx.fillStyle='#e07a5f';ctx.beginPath();ctx.moveTo(-8*s,-9*s);ctx.lineTo(0,-16*s);ctx.lineTo(8*s,-9*s);ctx.fill();
+   ctx.fillStyle=Math.sin(G.t*1.5+f.ang*9)>-0.6?'#ffe9a8':'#7a6a4a';ctx.fillRect(-2*s,-6*s,4*s,4*s);
+  }else if(f.type==='office'||f.type==='tower'){
+   const tall=f.type==='tower'?30:17,g=clamp(age/(f.type==='tower'?2:1.3),0,1),h=tall*s*g;
+   ctx.fillStyle=f.type==='tower'?'#5b7bd6':'#7d93c9';ctx.fillRect(-5.5*s,-h,11*s,h);
+   ctx.fillStyle='rgba(255,240,180,.75)';for(let y=-4*s;y>-h+2*s;y-=5*s){ctx.fillRect(-3*s,y-2*s,2*s,2*s);ctx.fillRect(1*s,y-2*s,2*s,2*s)}
+  }else if(f.type==='clutter'){
+   ctx.scale(pop,pop);ctx.fillStyle='#8f8a78';ctx.beginPath();ctx.arc(-3*s,-2.5*s,4.5*s,0,TAU);ctx.arc(3.5*s,-3*s,3.8*s,0,TAU);ctx.arc(0,-6*s,3*s,0,TAU);ctx.fill();
+  }
+  ctx.restore();
+ }
+}
+function drawPlanet(p){
+ const ringR=R+10,x=p.x,y=p.y,dim=p.rest>0?0.35:1,mine=p===G.me;
+ const glowA=[0,0.08,0.15,0.24,0.33][G.tierIdx]+(G.tierPulse>0?G.tierPulse*0.2:0);
+ if(glowA>0){const ag=ctx.createRadialGradient(x,y,R*0.9,x,y,R*1.9);ag.addColorStop(0,`rgba(129,178,154,${glowA})`);ag.addColorStop(1,'rgba(129,178,154,0)');ctx.fillStyle=ag;ctx.beginPath();ctx.arc(x,y,R*1.9,0,TAU);ctx.fill()}
+ if(mine){ctx.strokeStyle='rgba(244,237,225,.18)';ctx.lineWidth=1;ctx.setLineDash([2,5]);ctx.beginPath();ctx.arc(x,y,ringR+30,0,TAU);ctx.stroke();ctx.setLineDash([])}
+ ctx.globalAlpha=dim;ctx.lineCap='round';ctx.lineWidth=mine?9:7;
+ for(const f of FACES){
+  if(f.id==='neg'&&p.rest>0)continue;
+  ctx.strokeStyle=f.id==='no'&&p.shieldDown>0?`rgba(224,122,95,${0.15+0.15*Math.sin(G.t*12)})`:f.c;
+  ctx.beginPath();ctx.arc(x,y,ringR,p.rot+f.center-f.width/2,p.rot+f.center+f.width/2);ctx.stroke();
+  if(mine){const am=p.rot+f.center;ctx.fillStyle=f.c;ctx.font='700 11px -apple-system,Segoe UI,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(f.label,x+Math.cos(am)*(ringR+20),y+Math.sin(am)*(ringR+20))}
+ }
+ ctx.lineWidth=2.5;ctx.setLineDash([3,7]);ctx.strokeStyle='rgba(129,178,154,.55)';
+ [[FACES[0],FACES[1]],[FACES[1],FACES[0]]].forEach(([a,b])=>{const s0=p.rot+a.center+a.width/2+0.08,e0=p.rot+b.center-b.width/2-0.08+(b.center<a.center?TAU:0);ctx.beginPath();ctx.arc(x,y,ringR,s0,e0);ctx.stroke();
+  if(mine){const m=(s0+e0)/2;ctx.fillStyle='#81b29a';ctx.font='700 11px -apple-system,Segoe UI,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Yes',x+Math.cos(m)*(ringR+20),y+Math.sin(m)*(ringR+20))}});
+ ctx.setLineDash([]);ctx.globalAlpha=1;
+ const g=ctx.createRadialGradient(x-R*0.35,y-R*0.35,R*0.1,x,y,R);g.addColorStop(0,p.col);g.addColorStop(1,p.col2);ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,R,0,TAU);ctx.fill();
+ const grow=p.feats.filter(f=>f.type==='tree'||f.type==='house').length,mess=p.feats.filter(f=>f.type==='clutter').length;
+ if(grow){ctx.fillStyle=`rgba(129,178,154,${Math.min(0.35,grow*0.04)})`;ctx.beginPath();ctx.arc(x,y,R,0,TAU);ctx.fill()}
+ if(mess){ctx.fillStyle=`rgba(110,105,92,${Math.min(0.35,mess*0.04)})`;ctx.beginPath();ctx.arc(x,y,R,0,TAU);ctx.fill()}
+ drawFeats(p);
+ const ly=y+R+(mine?50:34),label=mine?(MODE==='solo'?'You':`You (${p.name})`):p.human?p.name:`${p.name} (computer)`;
+ ctx.font=`${mine?800:700} 12px -apple-system,Segoe UI,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.fillStyle=mine?'#f4ede1':'#c9cfdf';ctx.fillText(p.rest>0?`${label} · resting`:label,x,ly);
+ if(!mine){const bw=44;ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(x-bw/2,ly+9,bw,4);ctx.fillStyle=p.energy<3.5?'#e07a5f':'#f2cc8f';ctx.fillRect(x-bw/2,ly+9,bw*clamp(p.energy/12,0,1),4)}
+}
+// Faint aim line: where an incoming request will go if it meets your shield
+function drawAim(){
+ const p=G.me;
+ for(const it of G.items){
+  if(!(it.state==='in'||it.state==='pushed')||it.ign===p||it.kind==='friend')continue;
+  const v=Math.hypot(it.vx,it.vy)||1,dx=it.vx/v,dy=it.vy/v,ox=it.x-p.x,oy=it.y-p.y,Rc=R+12+it.r;
+  const b=ox*dx+oy*dy,c=ox*ox+oy*oy-Rc*Rc,disc=b*b-c;if(disc<0)continue;const t=-b-Math.sqrt(disc);if(t<0||t>240)continue;
+  const cxp=ox+dx*t,cyp=oy+dy*t,ang=Math.atan2(cyp,cxp);if(faceAt(p,ang)!=='no')continue;
+  const nx=Math.cos(ang),ny=Math.sin(ang),dot=dx*nx+dy*ny,rx=dx-2*dot*nx,ry=dy-2*dot*ny,L=it.kind==='boss'?0.19*Math.min(W,H)*2.1:220;
+  const x0=p.x+cxp,y0=p.y+cyp,a=1-t/240;
+  ctx.strokeStyle=it.kind==='boss'?`rgba(159,179,239,${0.65*a})`:`rgba(224,122,95,${0.4*a})`;ctx.lineWidth=2;ctx.setLineDash([4,6]);
+  ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+rx*L,y0+ry*L);ctx.stroke();ctx.setLineDash([]);
+ }
+}
+function draw(){
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,SW,SH);
+ ctx.setTransform(dpr*VS,0,0,dpr*VS,dpr*VX,dpr*VY);
+ for(const s of stars){ctx.fillStyle=`rgba(255,255,255,${0.25+s.s*0.25})`;ctx.fillRect(s.x*W,s.y*H,s.s,s.s)}
+ if(MODE!=='solo'){ctx.strokeStyle='rgba(255,255,255,.08)';ctx.lineWidth=1;ctx.strokeRect(0.5,0.5,W-1,H-1)}
+ if(!G)return;
+ ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;
+ for(const p of G.planets){ctx.beginPath();ctx.arc(sx,sy,Math.hypot(p.hx*W-sx,p.hy*H-sy),0,TAU);ctx.stroke()}
+ const sg=ctx.createRadialGradient(sx,sy,SUN*0.2,sx,sy,SUN*2.6);sg.addColorStop(0,'rgba(255,214,140,.55)');sg.addColorStop(1,'rgba(255,214,140,0)');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(sx,sy,SUN*2.6,0,TAU);ctx.fill();
+ const sb=ctx.createRadialGradient(sx-SUN*0.3,sy-SUN*0.3,SUN*0.1,sx,sy,SUN);sb.addColorStop(0,'#fff1c4');sb.addColorStop(1,'#f0a54a');ctx.fillStyle=sb;ctx.beginPath();ctx.arc(sx,sy,SUN*(1+0.03*Math.sin(G.t*2)),0,TAU);ctx.fill();
+ for(const p of G.planets)drawPlanet(p);
+ drawAim();
+ for(const q of G.parts){ctx.globalAlpha=clamp(q.life*1.4,0,1);ctx.fillStyle=q.col;ctx.beginPath();ctx.arc(q.x,q.y,q.size,0,TAU);ctx.fill()}ctx.globalAlpha=1;
+ for(const it of G.items){
+  ctx.globalAlpha=it.fade!=null?Math.max(0,it.fade):1;const hr=it.r+5;
+  if(it.kind==='boss'){ctx.save();ctx.translate(it.x,it.y);ctx.rotate(G.t*0.4);ctx.fillStyle='rgba(91,123,214,.35)';ctx.strokeStyle='rgba(120,150,235,.8)';ctx.lineWidth=2;ctx.fillRect(-hr,-hr,hr*2,hr*2);ctx.strokeRect(-hr,-hr,hr*2,hr*2);ctx.restore()}
+  else{ctx.fillStyle=it.kind==='friend'?'rgba(240,138,160,.3)':'rgba(217,211,160,.22)';ctx.beginPath();ctx.arc(it.x,it.y,hr,0,TAU);ctx.fill();if(it.kind==='friend'){ctx.strokeStyle='rgba(240,138,160,.7)';ctx.lineWidth=2;ctx.stroke()}}
+  ctx.font=`${Math.round(it.r*1.85)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(it.icon,it.x,it.y+1);
+  if(it.state==='in'&&!it.from&&it.label){const dd=Math.min(...G.planets.map(p=>Math.hypot(it.x-p.x,it.y-p.y))),la=clamp((dd-(R+60))/60,0,1);if(la>0){ctx.fillStyle=`rgba(244,237,225,${0.85*la})`;ctx.font='600 11px -apple-system,Segoe UI,sans-serif';ctx.textBaseline='bottom';ctx.fillText(it.label,it.x,it.y-it.r-8)}}
+  ctx.globalAlpha=1;
+ }
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='800 16px -apple-system,Segoe UI,sans-serif';
+ for(const f of G.floats){ctx.globalAlpha=Math.min(1,f.life);ctx.fillStyle=f.col;ctx.fillText(f.text,clamp(f.x,30,W-30),f.y);ctx.globalAlpha=1}
+}
+function hud(){
+ $('en').style.width=Math.max(0,G.me.energy/12*100)+'%';
+ $('se').style.width=Math.min(100,G.t/G.dur*100)+'%';
+ const f=G.score,fe=$('flv');if(fe.textContent!=String(f)){fe.textContent=f;fe.animate&&fe.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:250})}
+ let cur=0;for(let i=0;i<TIERS.length;i++)if(f>=TIERS[i][0])cur=i;
+ $('tierl').textContent=TIERS[cur][1];
+ const lo=Math.max(0,TIERS[cur][0]),nx=TIERS[cur+1];
+ $('fl').style.width=nx?clamp((f-lo)/(nx[0]-lo)*100,0,100)+'%':'100%';
+ $('nextl').textContent=nx?`${nx[1]} at ${nx[0]}`:'Top tier!';
+}
+
+// ---- networking: the host runs the game and sends snapshots; others send their own planet ----
+const NET={ws:null,id:null,slot:0,hostId:null,players:[],code:'',snaps:[],sendT:0,inT:0,leaving:false};
+const isHost=()=>NET.id&&NET.id===NET.hostId;
+function send(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))}
+function snapshot(){
+ const ps=G.planets.map(p=>{const o={x:r1(p.x),y:r1(p.y),r:r3(p.rot),e:r1(p.energy),sd:r1(p.shieldDown),rs:r1(p.rest)};
+  if(p.fv!==p.sentFv||G.t-(p.sentAt||0)>2){o.f=p.feats.map(f=>[r3(f.ang),f.type,f.size,r1(f.born)]);p.sentFv=p.fv;p.sentAt=G.t}return o});
+ const its=G.items.map(i=>[i.id,KN.indexOf(i.kind),i.icon,r1(i.x),r1(i.y),r1(i.vx),r1(i.vy),r1(i.r),STN.indexOf(i.state),i.state==='out'?r1(i.fade):1,i.from?1:0,i.ign?i.ign.slot:-1,i.from?'':i.label]);
+ return {t:'state',tm:r1(G.t),sc:G.score,ti:G.tierIdx,ps,its,ev:G.ev.splice(0)};
+}
+function applyEvents(ev){
+ for(const e of ev){
+  if(e[0]==='n'){if(e[1]===NET.slot)note(e[2],e[3])}
+  else if(e[0]==='c')caption(e[1],e[2]);
+  else if(e[0]==='b')burst(e[1],e[2],e[3],e[4],e[5],true);
+  else if(e[0]==='f')floatText(e[1],e[2],e[3],e[4],true);
+  else if(e[0]==='r'){G.tierPulse=1.2;ring(true)}
+ }
+}
+function onState(m){
+ if(!G||MODE!=='client')return;
+ for(let i=0;i<m.ps.length;i++){const q=m.ps[i],p=G.planets[i];if(!p)continue;p.energy=q.e;p.shieldDown=q.sd;p.rest=q.rs;
+  if(q.f)p.feats=q.f.map(a=>({ang:a[0],type:a[1],size:a[2],born:a[3]}))}
+ G.score=m.sc;G.tierIdx=m.ti;
+ NET.snaps.push({at:performance.now(),m});if(NET.snaps.length>2)NET.snaps.shift();
+ applyEvents(m.ev||[]);
+}
+// Draw others between the last two snapshots so motion looks smooth.
+function interpolate(){
+ const S=NET.snaps;if(!S.length)return;
+ const b=S[S.length-1],a=S.length>1?S[0]:b,span=Math.max(1,b.at-a.at),k=clamp((performance.now()-b.at)/span,0,1);
+ const lerp=(u,v)=>u+(v-u)*k;
+ G.t=lerp(a.m.tm,b.m.tm);
+ b.m.ps.forEach((q,i)=>{const p=G.planets[i];if(!p||p===G.me)return;const o=a.m.ps[i]||q;p.x=lerp(o.x,q.x);p.y=lerp(o.y,q.y);p.rot=o.r+adiff(q.r,o.r)*k});
+ const prev=new Map(a.m.its.map(r=>[r[0],r]));
+ G.items=b.m.its.map(r=>{const o=prev.get(r[0])||r,st=STN[r[8]];
+  return {id:r[0],kind:KN[r[1]],icon:r[2],x:lerp(o[3],r[3]),y:lerp(o[4],r[4]),vx:r[5],vy:r[6],r:r[7],state:st,fade:st==='out'?r[9]:null,from:r[10]?true:null,ign:r[11]>=0?G.planets[r[11]]:null,label:r[12]}});
+}
+function onInput(m){
+ if(MODE!=='host'||!G)return;const p=G.planets[m.slot];if(!p||!p.remote)return;
+ if([m.x,m.y,m.rot].every(Number.isFinite)){p.x=clamp(m.x,0,W);p.y=clamp(m.y,0,H);p.rot=m.rot;p.tx=p.x;p.ty=p.y}
+}
+function wsUrl(code){return `${location.protocol==='https:'?'wss':'ws'}://${location.host}${location.pathname.replace(/\/[^/]*$/,'')}/ws/${code}`}
+function joinRoom(code){
+ code=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ if(code.length<4){$('neterr').textContent='Room codes are four letters.';return}
+ $('neterr').textContent='Connecting...';
+ let ws;try{ws=new WebSocket(wsUrl(code))}catch(e){$('neterr').textContent="Rooms don't work from this page. Open the game at access.tesseros.com/boundary-planet/ to play together.";return}
+ NET.ws=ws;NET.code=code;NET.leaving=false;NET.id=null;
+ ws.onopen=()=>ws.send(JSON.stringify({t:'hello',name:myName()}));
+ ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return}onNet(m)};
+ ws.onclose=()=>{if(NET.ws!==ws)return;NET.ws=null;
+  if(!NET.leaving){if(G&&!G.over){G.over=true}showIntro(NET.id?'Lost the connection to the room.':"Couldn't reach that room. Check the code and your connection.")}};
+}
+function leaveRoom(){NET.leaving=true;if(NET.ws)NET.ws.close();NET.ws=null;NET.id=null;if(G)G.over=true;showIntro('')}
+function onNet(m){
+ if(m.t==='welcome'){NET.id=m.id;NET.slot=m.slot;$('neterr').textContent='';history.replaceState(null,'','?room='+NET.code);showRoom()}
+ else if(m.t==='players'){NET.players=m.players;const prevHost=NET.hostId;NET.hostId=m.hostId;
+  if(MODE==='host'&&G&&!G.over){for(const p of G.planets)if(p.remote&&!m.players.some(q=>q.slot===p.slot)){p.remote=false;p.human=false;announce(`${p.name} left. A computer teammate took over.`,'#a9b0c4')}}
+  if(prevHost&&prevHost!==m.hostId&&MODE==='client'&&G&&!G.over){G.over=true;showRoom(isHost()?'The host left, so that season ended. You are the host now.':'The host left, so that season ended.')}
+  else if(!$('room').classList.contains('hidden'))showRoom()}
+ else if(m.t==='full'||m.t==='busy'){NET.leaving=true;NET.ws&&NET.ws.close();NET.ws=null;showIntro(m.t==='full'?'That room already has three players.':'That room is in the middle of a season. Try again when it ends.')}
+ else if(m.t==='start'){if(isHost())return;MODE='client';resize();newGame(m.roster,NET.slot);NET.snaps=[];hideAll();requestAnimationFrame(t=>{G.last=t;requestAnimationFrame(clientLoop)})}
+ else if(m.t==='state')onState(m);
+ else if(m.t==='input')onInput(m);
+ else if(m.t==='end'){if(MODE!=='client'||!G)return;G.over=true;renderEnd(m.sum,NET.slot)}
+}
+function startRoomSeason(){
+ if(!isHost())return;
+ const roster=[0,1,2].map(s=>{const pl=NET.players.find(p=>p.slot===s);return pl?{name:pl.name,human:true,remote:s!==NET.slot}:{}});
+ MODE='host';resize();newGame(roster,NET.slot);
+ send({t:'start',roster:roster.map(r=>({name:r.name,human:r.human}))});
+ hideAll();requestAnimationFrame(t=>{G.last=t;spawn();requestAnimationFrame(loop)});
+}
+
+// ---- loops ----
+function loop(now){
+ if(!G||G.over)return;
+ const dt=Math.min(0.05,(now-G.last)/1000);G.last=now;
+ update(dt);
+ if(MODE==='host'){NET.sendT-=dt;if(NET.sendT<=0||G.over){NET.sendT=1/12;send(snapshot())}}
+ if(G.over)return;draw();hud();requestAnimationFrame(loop);
+}
+function clientLoop(now){
+ if(!G||G.over||MODE!=='client')return;
+ const dt=Math.min(0.05,(now-G.last)/1000);G.last=now;
+ interpolate();controlMe(dt);stepToward(G.me,dt);constrain(p=>p===G.me);fx(dt);
+ const me=G.me;if(me.energy<3.5&&!G.tiredNote){G.tiredNote=true;note('Running on empty. Moving and turning get harder.','#f2cc8f')}if(me.energy>=5)G.tiredNote=false;
+ NET.inT-=dt;if(NET.inT<=0){NET.inT=1/15;send({t:'input',x:r1(me.x),y:r1(me.y),rot:r3(me.rot)})}
+ draw();hud();requestAnimationFrame(clientLoop);
+}
+
+// ---- input: drag your planet to move it, drag the sky to spin it like a dial ----
+let drag=null;
+const toWorld=e=>({x:(e.clientX-VX)/VS,y:(e.clientY-VY)/VS});
+cv.addEventListener('pointerdown',e=>{if(!G||G.over)return;const me=G.me,w=toWorld(e);
+ if(Math.hypot(w.x-me.x,w.y-me.y)<R*1.4)drag={mode:'move',ox:me.x-w.x,oy:me.y-w.y};
+ else drag={mode:'spin',a:Math.atan2(w.y-me.y,w.x-me.x)};
+ cv.setPointerCapture(e.pointerId);cv.style.cursor=drag.mode==='move'?'move':'grabbing'});
+cv.addEventListener('pointermove',e=>{if(!G)return;const me=G.me,w=toWorld(e);
+ if(!drag){cv.style.cursor=Math.hypot(w.x-me.x,w.y-me.y)<R*1.4?'move':'grab';return}
+ if(drag.mode==='move'){me.tx=w.x+drag.ox;me.ty=w.y+drag.oy}
+ else{const a=Math.atan2(w.y-me.y,w.x-me.x);me.rot+=adiff(a,drag.a)*turnFactor(me);drag.a=a}});
+const endDrag=()=>{drag=null;cv.style.cursor='grab'};
+cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+window.addEventListener('keydown',e=>{if(G&&!G.over&&e.target.tagName!=='INPUT'){G.keys[e.key]=true;if(e.key.startsWith('Arrow'))e.preventDefault()}});
+window.addEventListener('keyup',e=>{if(G)G.keys[e.key]=false});
+
+// ---- end of season ----
+function summarize(why){
+ const c=(p,n)=>p.feats.filter(f=>n.includes(f.type)).length;
+ return {why,score:G.score,mode:MODE,planets:G.planets.map(p=>({slot:p.slot,name:p.name,human:p.human,trees:c(p,['tree']),homes:c(p,['house']),buildings:c(p,['office','tower']),clutter:c(p,['clutter']),burnouts:p.burnouts,log:p.log}))};
+}
+function finish(why){
+ G.over=true;if(SIM)return;draw();
+ const sum=summarize(why);if(MODE==='host')send({t:'end',sum});
+ renderEnd(sum,G.me.slot);
+}
+function renderEnd(sum,mySlot){
+ $('caption').classList.remove('show');
+ const me=sum.planets.find(p=>p.slot===mySlot)||sum.planets[0],L=me.log,fv=sum.score,burn=sum.planets.reduce((a,p)=>a+p.burnouts,0),solo=sum.mode==='solo';
+ const desc=p=>{const parts=[];if(p.trees)parts.push(`${p.trees} tree${p.trees>1?'s':''}`);if(p.homes)parts.push(`${p.homes} home${p.homes>1?'s':''}`);if(p.buildings)parts.push(`${p.buildings} building${p.buildings>1?'s':''}`);if(p.clutter)parts.push(`${p.clutter} clutter`);
+  return `<b>${p.slot===mySlot?'Your planet':esc(p.name)}</b>: ${parts.length?parts.join(', '):'still bare'}${p.burnouts?`, burned out ${p.burnouts}×`:''}.`};
+ const key=solo?'bp-team-best':'bp-room-best';let best=null;try{best=JSON.parse(localStorage.getItem(key))}catch(e){}
+ const isBest=best==null||fv>best;if(isBest){try{localStorage.setItem(key,JSON.stringify(fv))}catch(e){}}
+ let story;
+ if(sum.why==='burnout')story='You ran out of energy before the season ended. Too much of the heavy stuff came in whole.';
+ else if(L.passedNoise>=4)story='Your planet stayed tidy, partly because your noise kept landing on your teammates. Their planets noticed.';
+ else if(L.handStrained>=2||burn>=2)story='The system kept going, but someone was always carrying too much. A pass only helps when the catcher has room.';
+ else if(L.handGood>=3)story='A real team. You bounced the noise into empty space and passed work to whoever had room.';
+ else if(L.handGood>=1)story='You found the pass. Next season, try lining up a teammate before the heavy stuff arrives.';
+ else story='Three planets, side by side. Everyone handled their own sky. Heavy things bounce better when someone is ready to catch them.';
+ const hostName=(NET.players.find(p=>p.id===NET.hostId)||{}).name||'the host';
+ const buttons=solo?`<button class="btn" id="again">Play Again</button>`
+  :isHost()?`<div class="row"><button class="btn" id="again">Play Again</button><button class="btn ghost" id="toroom">Back to Room</button></div>`
+  :`<p class="small muted">Waiting for ${esc(hostName)} to start the next season.</p><button class="btn ghost" id="leave2">Leave Room</button>`;
+ $('endpanel').innerHTML=`<p class="small muted">${sum.why==='burnout'?'Out of energy. The season ended early.':'The season is over.'}</p><h2>Your System: ${tier(fv)}</h2><p><b>${fv} team points</b>. ${isBest?(best==null?'Your first season like this.':'Your best season yet.'):`Your best so far: ${best}.`}</p><p>${story}</p>
+  <div class="stats"><span>Bounced off your shield</span><b>${L.no}</b><span>Caught at your dock</span><b>${L.neg}</b><span>Accepted whole</span><b>${L.bare}</b><span>Work handed to a teammate with room</span><b>${L.handGood}</b><span>Work handed to a tired teammate</span><b>${L.handStrained}</b><span>Noise you bounced onto a teammate</span><b>${L.passedNoise}</b><span>Noise you sent into the sun</span><b>${L.sunned}</b><span>Burnouts across the team</span><b>${burn}</b></div>
+  <p class="small muted">${sum.planets.map(desc).join(' ')}</p>
+  <hr><p class="small"><b>What You Were Practising</b></p>
+  <p class="small muted"><b style="color:var(--no)">The Shield</b> is a Clean No: decline early, without a paragraph of apology. Light things bounce. Heavy things don't.</p>
+  <p class="small muted"><b style="color:var(--neg)">The Dock</b> is a Negotiated Yes: "Yes, Thursday instead of Tuesday." You name your capacity and the request shrinks to fit.</p>
+  <p class="small muted"><b style="color:var(--yes)">Open Ground</b> is a Trusting Yes: it costs energy now, but when it fits the life you want, it leaves you more alive.</p>
+  <p class="small muted"><b style="color:#9fb3ef">The Pass</b> is Hand It Off: a No can send work to someone better placed to say yes. It works when you aim it at someone with room, and when it's work, not noise or a friend asking for you.</p>
+  ${buttons}`;
+ hideAll();$('end').classList.remove('hidden');
+ const on=(id,f)=>{const b=$(id);if(b)b.onclick=f};
+ on('again',solo?startSolo:startRoomSeason);on('toroom',()=>showRoom());on('leave2',leaveRoom);
+}
+
+// ---- screens ----
+function hideAll(){['intro','room','end'].forEach(id=>$(id).classList.add('hidden'))}
+function showIntro(msg){hideAll();MODE='solo';resize();$('intro').classList.remove('hidden');$('neterr').textContent=msg||'';try{history.replaceState(null,'',location.pathname)}catch(e){}}
+function showRoom(msg){
+ if(G&&MODE==='client'&&!G.over)return;
+ hideAll();$('room').classList.remove('hidden');
+ $('rcode').textContent=NET.code;$('rlink').value=location.origin+location.pathname+'?room='+NET.code;
+ $('seats').innerHTML=[0,1,2].map(s=>{const pl=NET.players.find(p=>p.slot===s);
+  return `<div class="seat"><span class="dot" style="background:${SEATS[s].dot}"></span><span>${pl?`<b>${esc(pl.name)}</b>${pl.id===NET.id?' (you)':''}${pl.id===NET.hostId?' · host':''}`:`<span class="muted">Open seat. ${SEATS[s].ai}, a computer teammate, plays here.</span>`}</span></div>`}).join('');
+ const host=isHost(),hostName=(NET.players.find(p=>p.id===NET.hostId)||{}).name||'the host';
+ $('go').classList.toggle('hidden',!host);
+ $('rmsg').textContent=msg||(host?'Share the code or link. Start whenever you are ready; open seats are played by the computer. Wide screens work best.':`Waiting for ${hostName} to start the season.`);
+}
+function myName(){const n=$('nm').value.trim().slice(0,16)||'Player';try{localStorage.setItem('bp-name',n)}catch(e){}return n}
+function startSolo(){hideAll();MODE='solo';resize();newGame(soloRoster(),0);requestAnimationFrame(t=>{G.last=t;spawn();setTimeout(()=>{if(G&&!G.over&&MODE==='solo')spawn()},700);requestAnimationFrame(loop)})}
+const CODECH='ABCDEFGHJKLMNPQRSTUVWXYZ';
+$('solo').onclick=startSolo;
+$('create').onclick=()=>{let c='';for(let i=0;i<4;i++)c+=CODECH[Math.floor(Math.random()*CODECH.length)];joinRoom(c)};
+$('join').onclick=()=>joinRoom($('code').value);
+$('code').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom($('code').value)});
+$('go').onclick=startRoomSeason;$('leave').onclick=leaveRoom;
+$('copy').onclick=()=>{const v=$('rlink').value;(navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>{$('copy').textContent='Copied'},()=>{$('rlink').select()})};
+try{$('nm').value=localStorage.getItem('bp-name')||''}catch(e){}
+const qp=new URLSearchParams(location.search).get('room');if(qp){$('code').value=qp.toUpperCase().slice(0,6);$('neterr').textContent='Enter your name, then Join Room.';$('neterr').classList.remove('err')}
+newGame(soloRoster(),0);G.over=true;draw();
+if(SIM)window.__api={newGame:()=>newGame(soloRoster(),0),update,get G(){return G}};
+}
+</script>
+</body>
+</html>
