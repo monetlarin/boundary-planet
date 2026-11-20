@@ -56,6 +56,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 <div class="hud" id="hud">
  <div class="meter"><button class="hudbtn" id="exitbtn" title="Exit (Esc)">Exit</button><button class="hudbtn" id="rulesbtn" title="How points and energy work">Rules</button>Season<div class="bar"><div id="se" style="background:#a9b0c4"></div></div></div>
  <div class="meter">Your Energy<div class="bar"><div id="en" style="background:var(--neg)"></div></div><b id="env" style="min-width:2.2em">10</b></div>
+ <div class="meter">Room<div class="bar"><div id="rm" style="background:var(--yes)"></div></div><b id="rmv" style="min-width:3em">0/22</b></div>
  <div class="meter pts"><b id="flv">0</b><span>team pts</span><div class="tierbox"><span id="tierl">Bare Rock</span><div class="bar"><div id="fl" style="background:var(--yes)"></div></div><span id="nextl" class="nextl"></span></div></div>
 </div>
 <div id="caption" class="caption"></div>
@@ -78,7 +79,7 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
  <div class="row"><button class="btn" id="solo">Play Solo</button><button class="btn ghost" id="create">Create Room</button><button class="btn ghost" id="rules2">How Points Work</button></div>
  <div class="row"><input id="code" maxlength="6" placeholder="CODE" autocomplete="off" aria-label="Room code"><button class="btn ghost" id="join">Join Room</button></div>
  <p id="neterr" class="small err"></p>
- <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.6 · One season, about two minutes</p>
+ <p class="small muted" style="margin-top:14px">Solo plays with two computer teammates. A room seats up to three people; empty seats are played by the computer. Tesseros · Prototype v0.7 · One season, about two minutes</p>
 </div></div>
 
 <div class="overlay hidden" id="room"><div class="panel">
@@ -99,12 +100,13 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
  <h2>How Points and Energy Work</h2>
  <p class="small muted">Points are shared by the whole team. Energy is yours alone.</p>
  <table class="rules"><thead><tr><th>Request</th><th>No (shield)</th><th>Negotiate (dock)</th><th>Yes (open ground)</th></tr></thead><tbody>
- <tr><td>Noise 🔔</td><td data-l="No"><span class="plus">+1</span>. Bounces away.</td><td data-l="Negotiate"><span class="minus">−1</span> clutter.</td><td data-l="Yes"><span class="minus">−1</span> clutter.</td></tr>
- <tr><td>Friend ☕</td><td data-l="No"><span class="minus">−1</span>. Bounces off and asks a teammate next. Leaves only when all three planets have said No.</td><td data-l="Negotiate"><span class="plus">+2</span> home.</td><td data-l="Yes"><span class="plus">+3</span> tree, <span class="en">−0.5 energy</span>. Once it grows: <span class="en">+1.5 energy</span> back.</td></tr>
- <tr><td>Boss 📅</td><td data-l="No">0. Bounces, but heavy work comes back to someone. Three in a row cracks your shield for 5 seconds.</td><td data-l="Negotiate"><span class="plus">+2</span> office, <span class="en">−1 energy</span>.</td><td data-l="Yes"><span class="plus">+1</span> tower, <span class="en">−3 energy</span>.</td></tr>
+ <tr><td>Noise 🔔</td><td data-l="No"><span class="plus">+1</span>. Bounces away.</td><td data-l="Negotiate"><span class="minus">−1</span> clutter (1 space for 30 seconds).</td><td data-l="Yes"><span class="minus">−1</span> clutter (1 space for 30 seconds).</td></tr>
+ <tr><td>Friend ☕</td><td data-l="No"><span class="minus">−1</span>. Bounces off and asks a teammate next. Leaves only when all three planets have said No.</td><td data-l="Negotiate"><span class="plus">+2</span> home (1 space, stays).</td><td data-l="Yes"><span class="plus">+3</span> tree (1 space, stays), <span class="en">−0.5 energy</span>. Once it grows: <span class="en">+1.5 energy</span> back.</td></tr>
+ <tr><td>Boss 📅</td><td data-l="No">0. Bounces, but heavy work comes back to someone. Three in a row cracks your shield for 5 seconds.</td><td data-l="Negotiate"><span class="plus">+2</span> office (2 spaces for 25 seconds), <span class="en">−1 energy</span>.</td><td data-l="Yes"><span class="plus">+1</span> tower (4 spaces for 40 seconds), <span class="en">−3 energy</span>.</td></tr>
  </tbody></table>
  <p class="small"><b>Hand-offs.</b> Boss work you bounce that a teammate catches: <span class="plus">+2</span> if they had energy to spare (5 or more). If they were tired: <span class="minus">−1</span>, and they lose <span class="en">1.5 energy</span>.</p>
- <p class="small"><b>The sun.</b> Anything that hits the sun blows up. A friend lost that way costs <span class="minus">−1</span>.</p>
+ <p class="small"><b>Room.</b> Your planet has 22 spaces. Trees and homes stay all season; work finishes and frees its space; clutter fades. When you're full, every new Yes crushes your oldest things to make space, and you lose the points they earned (a crushed tree is <span class="minus">−3</span>).</p>
+ <p class="small"><b>The sun.</b> Its gravity pulls on anything you bounce, and anything that hits it blows up. Your aim line curves to show where a bounce will go, with a ring if it will reach the sun. A friend lost in the sun costs <span class="minus">−1</span>.</p>
  <p class="small"><b>Energy.</b> You start with 10 of 12. It refills slowly, about 1 every 25 seconds, and grown trees give some back. Low energy makes you slower to move and turn. At zero: playing solo, your season ends; in a room, you rest for 6 seconds with your shield and dock down, and the team loses 3.</p>
  <p class="small"><b>Tiers.</b> Sprouting at 25, Growing at 60, Flourishing at 110, Thriving at 170.</p>
  <button class="btn" id="rclose">Got It</button>
@@ -136,13 +138,18 @@ resize();window.addEventListener('resize',resize);
 const TIERS=[[-999,'Bare Rock'],[25,'Sprouting'],[60,'Growing'],[110,'Flourishing'],[170,'Thriving']];
 function tier(v){let t=TIERS[0][1];for(const [n,l] of TIERS)if(v>=n)t=l;return t}
 const FACES=[{id:'no',c:'#e07a5f',center:0,width:1.35,label:'No'},{id:'neg',c:'#f2cc8f',center:Math.PI,width:1.2,label:'Negotiate'}];
+// Room: every planet has 22 spaces. Trees and homes stay; work finishes and frees its space; clutter fades.
+const CAP=22,COST={tree:1,house:1,office:2,tower:4,clutter:1},LIFE={office:25,tower:40,clutter:30},VALUE={tree:3,house:2,office:2,tower:1,clutter:0};
+const GM=()=>1.5e6*Math.pow(Math.min(W,H)/780,3);
+function gravity(o,dt){const dx=sx-o.x,dy=sy-o.y,d2=Math.max(dx*dx+dy*dy,900),d=Math.sqrt(d2),a=GM()/d2;o.vx+=dx/d*a*dt;o.vy+=dy/d*a*dt}
+const used=p=>p.feats.reduce((a,f)=>a+(COST[f.type]||1),0);
 const KN=['noise','friend','boss'],STN=['in','pushed','out','orbit'];
 const KINDS={
  noise:{r:10,speed:80,labels:[['Ping','🔔'],['Free webinar!','📣'],['New notification','📱'],['Quick q?','❓'],['Sale ends today','🏷️'],['Reply-all','📧'],['Did you see this?','👀']]},
  friend:{r:13,speed:44,labels:[['Coffee?','☕'],['Help me move?','📦'],['Birthday dinner','🎂'],['Long walk?','🚶'],['Can we talk?','💬'],['Game night','🎲']]},
  boss:{r:17,speed:50,labels:[['New deadline','📅'],['Extra project','📁'],['Urgent client','🚨'],['Weekend shift','🗓️'],['Scope creep','📈']]}};
 const POLICY={
- steady:(p,k)=>k==='noise'?'no':k==='friend'?(p.energy>3?'yes':'neg'):(p.energy>6?'neg':'no'),
+ steady:(p,k)=>k==='noise'?'no':k==='friend'?(p.energy>3&&used(p)<CAP?'yes':'neg'):(p.energy>6&&used(p)<CAP-2?'neg':'no'),
  eager:(p,k)=>k==='noise'?'no':k==='friend'?'yes':(p.energy>5?'yes':'neg')};
 // Three seats. A seat nobody sits in is played by the computer.
 const SEATS=[{col:'#8fa27a',col2:'#3c4a3a',ai:'Fern',policy:'steady',skill:0.85,dot:'#8fa27a'},
@@ -154,7 +161,7 @@ function mkPlanet(slot,seat){
  const S=SEATS[slot],h=homes()[slot];
  return {slot,name:seat.name||S.ai,human:!!seat.human,remote:!!seat.remote,hx:h[0],hy:h[1],x:h[0]*W,y:h[1]*H,tx:h[0]*W,ty:h[1]*H,
   rot:slot===0?-Math.PI/2:Math.random()*TAU,energy:10,feats:[],fv:0,shieldDown:0,cracks:0,rest:0,col:S.col,col2:S.col2,policy:S.policy,skill:S.skill,
-  phase:Math.random()*9,burnouts:0,recent:[],ptsBy:{},log:{no:0,neg:0,bare:0,handGood:0,handStrained:0,passedNoise:0,sunned:0}};
+  phase:Math.random()*9,burnouts:0,recent:[],ptsBy:{},log:{no:0,neg:0,bare:0,handGood:0,handStrained:0,passedNoise:0,sunned:0,crushed:0}};
 }
 // roster: one entry per seat {name,human,remote}; me: the seat this browser controls
 function newGame(roster,me){
@@ -199,14 +206,21 @@ function announce(text,col){caption(text,col);if(MODE==='host')G.ev.push(['c',te
 function burst(x,y,col,n,spd,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['b',r1(x),r1(y),col,n,spd]);for(let i=0;i<n;i++){const a=Math.random()*TAU,v=(spd||60)*(0.4+Math.random());G.parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:0.7+Math.random()*0.5,col,size:1.5+Math.random()*2.5})}}
 function floatText(x,y,text,col,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['f',r1(x),r1(y),text,col]);G.floats.push({x,y,text,col,life:0.9})}
 function ring(local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['r']);for(const p of G.planets)for(let k=0;k<24;k++){const a=k/24*TAU;burst(p.x+Math.cos(a)*(R+6),p.y+Math.sin(a)*(R+6),'#a8d5a2',1,110,true)}}
-const PTSNAME={bounced:'Noise bounced',tree:'Trees',home:'Homes',office:'Offices',tower:'Towers',clutter:'Clutter','friend bounced':'Friends turned away','hand-off':'Hand-offs to a teammate with room',stretched:'Hand-offs to a tired teammate',burnout:'Burnouts','friend lost':'Friends lost in the sun'};
+const PTSNAME={'crushed tree':'Trees crushed for room','crushed home':'Homes crushed for room','crushed office':'Offices crushed for room','crushed tower':'Towers crushed for room',bounced:'Noise bounced',tree:'Trees',home:'Homes',office:'Offices',tower:'Towers',clutter:'Clutter','friend bounced':'Friends turned away','hand-off':'Hand-offs to a teammate with room',stretched:'Hand-offs to a tired teammate',burnout:'Burnouts','friend lost':'Friends lost in the sun'};
 function pts(p,n,label){G.score+=n;p.ptsBy[label]=(p.ptsBy[label]||0)+n;const near=SIM?0:G.floats.filter(f=>!f.small&&f.life>0.45&&Math.abs(f.x-p.x)<60&&f.y<p.y).length;floatText(p.x+(Math.random()-0.5)*16,p.y-R-40-near*19,`${n>0?'+':''}${n} ${label}`,n>0?'#81b29a':'#e07a5f')}
 // Energy changes pop up beside your own planet, so you can see where it goes.
 function energy(p,d){p.energy=Math.min(12,p.energy+d);if(SIM)return;const t=`${d>0?'+':'−'}${Math.abs(d)} energy`,x=p.x+R+52,y=p.y+(Math.random()-0.5)*16;
  if(p===G.me)G.floats.push({x,y,text:t,col:'#f2cc8f',life:1.4,small:true});else if(MODE==='host'&&p.remote)G.ev.push(['g',p.slot,r1(x),r1(y),t])}
 function explode(x,y,local){if(SIM)return;if(MODE==='host'&&!local)G.ev.push(['x',r1(x),r1(y)]);G.booms.push({x,y,life:0.7});burst(x,y,'#ffb347',18,150,true);burst(x,y,'#fff1c4',10,80,true)}
 const FEATCOL={tree:'#a8d5a2',house:'#f2cc8f',office:'#9fb3ef',tower:'#9fb3ef',clutter:'#8f8a78'};
-function addFeat(p,worldAng,type,size){p.feats.push({ang:norm(worldAng-p.rot),type,size:size||1,born:G.t});p.fv++;burst(p.x+Math.cos(worldAng)*(R+4),p.y+Math.sin(worldAng)*(R+4),FEATCOL[type],type==='tree'?14:8,type==='tree'?70:50)}
+function addFeat(p,worldAng,type,size){
+ // No room left: the oldest things get crushed to make space, and their points go with them.
+ let crushed=0;
+ while(p.feats.length&&used(p)+COST[type]>CAP){const f=p.feats.shift();if(VALUE[f.type]){crushed++;p.log.crushed++}const fa=f.ang+p.rot;burst(p.x+Math.cos(fa)*(R+4),p.y+Math.sin(fa)*(R+4),'#8f8a78',10,60);
+  if(VALUE[f.type])pts(p,-VALUE[f.type],'crushed '+(f.type==='house'?'home':f.type))}
+ if(crushed)say(p,'No room left. Your oldest things got crushed to make space.','#e07a5f');
+ p.feats.push({ang:norm(worldAng-p.rot),type,size:size||1,born:G.t,until:LIFE[type]?G.t+LIFE[type]:null});p.fv++;
+ burst(p.x+Math.cos(worldAng)*(R+4),p.y+Math.sin(worldAng)*(R+4),FEATCOL[type],type==='tree'?14:8,type==='tree'?70:50)}
 
 // ---- the rules ----
 // A boss request caught by someone other than the planet that bounced it is a hand-off.
@@ -293,6 +307,8 @@ function update(dt){
   if(p.rest>0){p.rest-=dt;p.energy=Math.min(12,p.energy+dt*0.6)}else p.energy=Math.min(12,p.energy+dt*0.04);
   const endsSeason=MODE==='solo'&&p===G.me;
   if(!endsSeason&&p.energy<=0&&p.rest<=0){p.energy=0;p.rest=6;p.shieldDown=6;p.burnouts++;pts(p,-3,'burnout');announce(`${p.human&&p===G.me?'You':p.name} burned out and need${p.human&&p===G.me?'':'s'} a rest.`,'#e07a5f');say(p,'You burned out. Rest a moment; you will be back.','#e07a5f')}
+  if(p.feats.some(f=>f.until&&G.t>=f.until)){const done=p.feats.filter(f=>f.until&&G.t>=f.until);p.feats=p.feats.filter(f=>!(f.until&&G.t>=f.until));p.fv++;
+   if(done.some(f=>f.type!=='clutter'))say(p,'Work done. That space is free again.','#9fb3ef');else say(p,'The clutter faded. A little more room.','#c9c3a0')}
   for(const f of p.feats){if(f.type==='tree'&&!f.paid&&G.t-f.born>6){f.paid=true;energy(p,1.5);say(p,'It grew. You feel more alive.','#81b29a')}}
  }
  constrain(p=>!p.remote);
@@ -306,6 +322,7 @@ function update(dt){
     if(it.kind==='boss'&&!it.seeking){it.seeking=true;const sp=Math.hypot(it.vx,it.vy)||1,v=KINDS.boss.speed*1.1;it.vx*=v/sp;it.vy*=v/sp}
     let tg=null,bd=1e9;for(const q of G.planets){if(it.kind==='friend'&&it.noSet.includes(q.slot))continue;const d=Math.hypot(q.x-it.x,q.y-it.y);if(d<bd){bd=d;tg=q}}
     if(tg){const a=Math.atan2(tg.y-it.y,tg.x-it.x),sp=Math.hypot(it.vx,it.vy),kk=Math.min(1,dt*1.3);it.vx+=(Math.cos(a)*sp-it.vx)*kk;it.vy+=(Math.sin(a)*sp-it.vy)*kk}}}
+   if(it.from&&it.kind!=='friend')gravity(it,dt);
    let vx=it.vx,vy=it.vy;
    if(it.kind==='noise'){const n=Math.hypot(it.vx,it.vy)||1,w=Math.sin(it.wob)*30;vx+=-it.vy/n*w;vy+=it.vx/n*w}
    it.x+=vx*dt;it.y+=vy*dt;
@@ -341,7 +358,7 @@ const stars=[...Array(140)].map(()=>({x:Math.random(),y:Math.random(),s:Math.ran
 function drawFeats(p){
  for(const f of p.feats){
   const a=f.ang+p.rot,age=G.t-f.born;
-  ctx.save();ctx.translate(p.x+Math.cos(a)*R*0.97,p.y+Math.sin(a)*R*0.97);ctx.rotate(a+Math.PI/2);
+  ctx.save();if(f.until){const left=f.until-G.t;if(left<1.5)ctx.globalAlpha=clamp(left/1.5,0,1)}ctx.translate(p.x+Math.cos(a)*R*0.97,p.y+Math.sin(a)*R*0.97);ctx.rotate(a+Math.PI/2);
   const s=f.size*Math.max(0.75,R/40),pop=age<0.45?1+0.5*Math.sin(age/0.45*Math.PI):1;
   if(f.type==='tree'){
    const g=clamp(age/4.5,0,1),sway=Math.sin(G.t*2+f.ang*7)*0.07*g;ctx.rotate(sway);
@@ -386,7 +403,7 @@ function drawPlanet(p){
  const ly=y+R+(mine?50:34),label=mine?(MODE==='solo'?'You':`You (${p.name})`):p.human?p.name:`${p.name} (computer)`;
  ctx.font=`${mine?800:700} 12px -apple-system,Segoe UI,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
  ctx.fillStyle=mine?'#f4ede1':'#c9cfdf';ctx.fillText(p.rest>0?`${label} · resting`:label,x,ly);
- if(!mine){const bw=44;ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(x-bw/2,ly+9,bw,4);ctx.fillStyle=p.energy<3.5?'#e07a5f':'#f2cc8f';ctx.fillRect(x-bw/2,ly+9,bw*clamp(p.energy/12,0,1),4)}
+ if(!mine){const bw=44,u=used(p);ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(x-bw/2,ly+9,bw,4);ctx.fillRect(x-bw/2,ly+16,bw,4);ctx.fillStyle=p.energy<3.5?'#e07a5f':'#f2cc8f';ctx.fillRect(x-bw/2,ly+9,bw*clamp(p.energy/12,0,1),4);ctx.fillStyle=u>=CAP-2?'#e07a5f':'#81b29a';ctx.fillRect(x-bw/2,ly+16,bw*clamp(u/CAP,0,1),4)}
 }
 // Faint aim line: where an incoming request will go if it meets your shield
 function drawAim(){
@@ -396,10 +413,14 @@ function drawAim(){
   const v=Math.hypot(it.vx,it.vy)||1,dx=it.vx/v,dy=it.vy/v,ox=it.x-p.x,oy=it.y-p.y,Rc=R+12+it.r;
   const b=ox*dx+oy*dy,c=ox*ox+oy*oy-Rc*Rc,disc=b*b-c;if(disc<0)continue;const t=-b-Math.sqrt(disc);if(t<0||t>240)continue;
   const cxp=ox+dx*t,cyp=oy+dy*t,ang=Math.atan2(cyp,cxp);if(faceAt(p,ang)!=='no')continue;
-  const nx=Math.cos(ang),ny=Math.sin(ang),dot=dx*nx+dy*ny,rx=dx-2*dot*nx,ry=dy-2*dot*ny,L=it.kind==='boss'?260:it.kind==='friend'?160:220;
-  const x0=p.x+cxp,y0=p.y+cyp,a=1-t/240;
-  ctx.strokeStyle=it.kind==='boss'?`rgba(159,179,239,${0.65*a})`:it.kind==='friend'?`rgba(240,138,160,${0.55*a})`:`rgba(224,122,95,${0.4*a})`;ctx.lineWidth=2;ctx.setLineDash([4,6]);
-  ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+rx*L,y0+ry*L);ctx.stroke();ctx.setLineDash([]);
+  const nx=Math.cos(ang),ny=Math.sin(ang),dot=dx*nx+dy*ny,rx=dx-2*dot*nx,ry=dy-2*dot*ny,a=1-t/240;
+  ctx.strokeStyle=it.kind==='boss'?`rgba(159,179,239,${0.7*a})`:it.kind==='friend'?`rgba(240,138,160,${0.55*a})`:`rgba(224,122,95,${0.5*a})`;ctx.lineWidth=2;ctx.setLineDash([4,6]);
+  // trace where it will go, pulled by the sun (friends aren't)
+  const o={x:p.x+cxp,y:p.y+cyp,vx:0,vy:0},sp=it.kind==='boss'?0.16*Math.min(W,H):it.kind==='noise'?v*1.3:Math.max(45,v);o.vx=rx*sp;o.vy=ry*sp;
+  ctx.beginPath();ctx.moveTo(o.x,o.y);let hit=false;const steps=it.kind==='friend'?40:75;
+  for(let i=0;i<steps;i++){if(it.kind!=='friend')gravity(o,1/30);o.x+=o.vx/30;o.y+=o.vy/30;ctx.lineTo(o.x,o.y);if(Math.hypot(o.x-sx,o.y-sy)<SUN+it.r){hit=true;break}if(o.x<0||o.x>W||o.y<0||o.y>H)break}
+  ctx.stroke();ctx.setLineDash([]);
+  if(hit){ctx.strokeStyle=`rgba(255,207,122,${0.9*a})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(o.x,o.y,9,0,TAU);ctx.stroke()}
  }
 }
 function draw(){
@@ -428,7 +449,7 @@ function draw(){
  for(const f of G.floats){ctx.globalAlpha=Math.min(1,f.life);ctx.fillStyle=f.col;ctx.font=f.small?'700 13px -apple-system,Segoe UI,sans-serif':'800 15px -apple-system,Segoe UI,sans-serif';ctx.textAlign=f.small?'left':'center';ctx.fillText(f.text,clamp(f.x,f.small?10:70,W-(f.small?90:70)),f.y);ctx.globalAlpha=1}
 }
 function hud(){
- $('en').style.width=Math.max(0,G.me.energy/12*100)+'%';$('env').textContent=Math.max(0,Math.round(G.me.energy*10)/10);
+ $('en').style.width=Math.max(0,G.me.energy/12*100)+'%';$('env').textContent=Math.max(0,Math.round(G.me.energy*10)/10);{const u=used(G.me);$('rm').style.width=clamp(u/CAP*100,0,100)+'%';$('rm').style.background=u>=CAP-2?'var(--no)':'var(--yes)';$('rmv').textContent=u+'/'+CAP}
  $('se').style.width=Math.min(100,G.t/G.dur*100)+'%';
  const f=G.score,fe=$('flv');if(fe.textContent!=String(f)){fe.textContent=f;fe.animate&&fe.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:250})}
  let cur=0;for(let i=0;i<TIERS.length;i++)if(f>=TIERS[i][0])cur=i;
@@ -444,7 +465,7 @@ const isHost=()=>NET.id&&NET.id===NET.hostId;
 function send(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))}
 function snapshot(){
  const ps=G.planets.map(p=>{const o={x:r1(p.x),y:r1(p.y),r:r3(p.rot),e:r1(p.energy),sd:r1(p.shieldDown),rs:r1(p.rest)};
-  if(p.fv!==p.sentFv||G.t-(p.sentAt||0)>2){o.f=p.feats.map(f=>[r3(f.ang),f.type,f.size,r1(f.born)]);p.sentFv=p.fv;p.sentAt=G.t}return o});
+  if(p.fv!==p.sentFv||G.t-(p.sentAt||0)>2){o.f=p.feats.map(f=>[r3(f.ang),f.type,f.size,r1(f.born),f.until?r1(f.until):0]);p.sentFv=p.fv;p.sentAt=G.t}return o});
  const its=G.items.map(i=>[i.id,KN.indexOf(i.kind),i.icon,r1(i.x),r1(i.y),r1(i.vx),r1(i.vy),r1(i.r),STN.indexOf(i.state),i.state==='out'?r1(i.fade):1,i.from?1:0,i.ign?i.ign.slot:-1,i.from?'':i.label]);
  return {t:'state',tm:r1(G.t),sc:G.score,ti:G.tierIdx,ps,its,ev:G.ev.splice(0)};
 }
@@ -462,7 +483,7 @@ function applyEvents(ev){
 function onState(m){
  if(!G||MODE!=='client')return;
  for(let i=0;i<m.ps.length;i++){const q=m.ps[i],p=G.planets[i];if(!p)continue;p.energy=q.e;p.shieldDown=q.sd;p.rest=q.rs;
-  if(q.f)p.feats=q.f.map(a=>({ang:a[0],type:a[1],size:a[2],born:a[3]}))}
+  if(q.f)p.feats=q.f.map(a=>({ang:a[0],type:a[1],size:a[2],born:a[3],until:a[4]||null}))}
  G.score=m.sc;G.tierIdx=m.ti;
  NET.snaps.push({at:performance.now(),m});if(NET.snaps.length>2)NET.snaps.shift();
  applyEvents(m.ev||[]);
@@ -568,6 +589,7 @@ function renderEnd(sum,mySlot){
  const isBest=best==null||fv>best;if(isBest){try{localStorage.setItem(key,JSON.stringify(fv))}catch(e){}}
  let story;
  if(sum.why==='burnout')story='You ran out of energy before the season ended. Too much of the heavy stuff came in whole.';
+ else if((L.crushed||0)>=3)story='Your planet ran out of room. Every extra yes crushed something that was already growing.';
  else if(L.passedNoise>=4)story='Your planet stayed tidy, partly because your noise kept landing on your teammates. Their planets noticed.';
  else if(L.handStrained>=2||burn>=2)story='The system kept going, but someone was always carrying too much. A pass only helps when the catcher has room.';
  else if(L.handGood>=3)story='A real team. You bounced the noise into empty space and passed work to whoever had room.';
