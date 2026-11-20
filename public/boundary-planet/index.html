@@ -164,7 +164,8 @@ const POLICY={
 const SEATS=[{col:'#8fa27a',col2:'#3c4a3a',ai:'Fern',policy:'steady',skill:0.85,dot:'#8fa27a'},
  {col:'#88a9c2',col2:'#2f4459',ai:'Juno',policy:'steady',skill:0.8,dot:'#88a9c2'},
  {col:'#c9a07f',col2:'#5a4034',ai:'Ash',policy:'eager',skill:0.72,dot:'#c9a07f'}];
-function homes(){return W<H*0.8?[[0.28,0.74],[0.5,0.24],[0.74,0.56]]:[[0.27,0.68],[0.5,0.24],[0.74,0.64]]}
+// On tall screens the three orbits sit above and below the sun, so nobody parks beside it.
+function homes(){return W<H*0.8?[[0.27,0.8],[0.5,0.17],[0.73,0.8]]:[[0.27,0.68],[0.5,0.24],[0.74,0.64]]}
 
 function mkPlanet(slot,seat){
  const S=SEATS[slot],h=homes()[slot];
