@@ -344,7 +344,7 @@ function update(dt){
   for(const f of p.feats){if(f.type==='tree'&&!f.paid&&G.t-f.born>6){f.paid=true;energy(p,1.5);say(p,'It grew. You feel more alive.','#81b29a')}}
  }
  constrain(p=>!p.remote);
- for(const p of G.planets)if(p.human&&!p.dead&&Math.hypot(p.x-sx,p.y-sy)<SUN+R*0.7){kill(p);if(G.over)return}
+ for(const p of G.planets)if(p.human&&!p.dead&&Math.hypot(p.x-sx,p.y-sy)<SUN+R*0.95){kill(p);if(G.over)return}
  if(G.t<G.dur){G.spawnT-=dt;if(G.spawnT<=0){spawn();const pr=G.t/G.dur;G.spawnT=(1.08-pr*0.48)*(0.75+Math.random()*0.5)}}
  for(const it of G.items){
   it.wob+=dt*14;
@@ -429,6 +429,7 @@ function drawPlanet(p){
  [[FACES[0],FACES[1]],[FACES[1],FACES[0]]].forEach(([a,b])=>{const s0=p.rot+a.center+a.width/2+0.08,e0=p.rot+b.center-b.width/2-0.08+(b.center<a.center?TAU:0);ctx.beginPath();ctx.arc(x,y,ringR,s0,e0);ctx.stroke();
   if(mine){const m=(s0+e0)/2;ctx.fillStyle='#81b29a';ctx.font='700 11px -apple-system,Segoe UI,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('Yes',x+Math.cos(m)*(ringR+20),y+Math.sin(m)*(ringR+20))}});
  ctx.setLineDash([]);ctx.globalAlpha=1;
+ if(p.human){const heat=clamp(1-(Math.hypot(x-sx,y-sy)-(SUN+R))/90,0,1);if(heat>0){const hg=ctx.createRadialGradient(x,y,R*0.8,x,y,R*1.7);hg.addColorStop(0,`rgba(255,120,60,${0.6*heat})`);hg.addColorStop(1,'rgba(255,120,60,0)');ctx.fillStyle=hg;ctx.beginPath();ctx.arc(x,y,R*1.7,0,TAU);ctx.fill();if(mine&&heat>0.4)note('Too close to the sun! Touch it and your planet explodes.','#ffb347')}}
  const g=ctx.createRadialGradient(x-R*0.35,y-R*0.35,R*0.1,x,y,R);g.addColorStop(0,p.col);g.addColorStop(1,p.col2);ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,R,0,TAU);ctx.fill();
  const grow=p.feats.filter(f=>f.type==='tree'||f.type==='house').length,mess=p.feats.filter(f=>f.type==='clutter').length;
  if(grow){ctx.fillStyle=`rgba(129,178,154,${Math.min(0.35,grow*0.04)})`;ctx.beginPath();ctx.arc(x,y,R,0,TAU);ctx.fill()}

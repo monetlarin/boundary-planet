@@ -34,7 +34,12 @@ export default {
     if (url.pathname === BASE) {
       return Response.redirect(url.origin + BASE + "/" + url.search, 301);
     }
-    return env.ASSETS.fetch(request);
+    // Always check for the newest version of the game page, so a reload picks up changes.
+    const res = await env.ASSETS.fetch(request);
+    if (!(res.headers.get("Content-Type") || "").includes("text/html")) return res;
+    const out = new Response(res.body, res);
+    out.headers.set("Cache-Control", "no-cache");
+    return out;
   },
 };
 
