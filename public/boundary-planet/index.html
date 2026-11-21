@@ -248,19 +248,20 @@ function handoff(p,passer){
  else{energy(p,-1.5);passer.log.handStrained++;say(passer,`${p.name} was already stretched.`,'#e07a5f');say(p,`${passer.name} passed you work while you were tired.`,'#e07a5f')}
 }
 function bounceOff(it,p,ang,speed){const nx=Math.cos(ang),ny=Math.sin(ang),dot=it.vx*nx+it.vy*ny;let vx=it.vx-2*dot*nx,vy=it.vy-2*dot*ny;if(vx*nx+vy*ny<=0){vx=nx;vy=ny}
- const s=Math.hypot(vx,vy)||1;it.vx=vx/s*speed;it.vy=vy/s*speed;it.ign=p;it.ignT=0.8}
+ const s=Math.hypot(vx,vy)||1;it.vx=vx/s*speed;it.vy=vy/s*speed;it.ign=p;it.ignT=0.3}
 function impact(it,p){
  const ang=Math.atan2(it.y-p.y,it.x-p.x),face=faceAt(p,ang),k=it.kind,sp=Math.hypot(it.vx,it.vy);
  // a negotiated request: open ground lands the lighter version, whoever catches it
  if(it.negotiated){
   if(face==='bare'){p.log.bare++;landNegotiated(it,p,ang);return}
-  if(face==='no'){it.negotiated=false;it.negSet=[]} // a No ends the deal; handled as a normal No below
+  if(face==='no'){it.negotiated=false;it.negSet=[];it.toSun=false} // a No ends the deal; handled as a normal No below
+  if(face==='neg'&&it.toSun){bounceOff(it,p,ang,Math.max(60,sp));return}
  }
  const passer=it.from&&it.from!==p?it.from:null;
  p.log[face]++;
  if(face==='no'){
   it.from=p;
-  if(k==='noise'){bounceOff(it,p,ang,sp*1.3);it.ignT=99;energy(p,0.3);say(p,'Bounced. Saying No to noise saves you energy.','#e07a5f')}
+  if(k==='noise'){bounceOff(it,p,ang,sp*1.3);energy(p,0.3);say(p,'Bounced. Saying No to noise saves you energy.','#e07a5f')}
   else if(k==='friend'){
    if(!it.noSet.includes(p.slot))it.noSet.push(p.slot);
    bounceOff(it,p,ang,Math.max(45,sp));it.walls=true;it.seekT=0.9;
@@ -272,7 +273,7 @@ function impact(it,p){
   return;
  }
  if(face==='neg'){
-  if(k==='noise'){it.from=p;bounceOff(it,p,ang,sp*1.2);it.ignT=99;say(p,"There's no negotiating with noise. It just bounced.",'#c9c3a0');return}
+  if(k==='noise'){it.from=p;bounceOff(it,p,ang,sp*1.2);say(p,"There's no negotiating with noise. It just bounced.",'#c9c3a0');return}
   // Negotiate passes it on: it bounces toward a teammate, lighter, and anyone can still catch it.
   const firstHere=!it.negSet.includes(p.slot);if(firstHere)it.negSet.push(p.slot);
   if(firstHere&&k==='extra')energy(p,0.5);
@@ -378,8 +379,10 @@ function update(dt){
     else if(it.kind==='friend'){announce(`"${it.label}" flew into the sun. Nobody answered it.`,'#f08aa0')}
     else if(it.from&&!it.toSun){it.from.log.sunned++;say(it.from,HEAVY(it.kind)?'Into the sun. That work is gone for good.':'Into the sun. Gone for good.','#ffcf7a')}
     continue}
-   if(!it.toSun)for(const p of G.planets){if(p===it.ign||p.dead)continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
-  }else if(it.state==='out'){it.x+=it.vx*dt;it.y+=it.vy*dt;it.fade-=dt*0.7;if(it.fade<=0)it.state='gone'}
+   for(const p of G.planets){if(p===it.ign||p.dead||p.remote)continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){impact(it,p);break}}
+  }else if(it.state==='out'){it.x+=it.vx*dt;it.y+=it.vy*dt;it.fade-=dt*0.7;if(it.fade<=0){it.state='gone';continue}
+   if(it.ign&&it.ignT!=null){it.ignT-=dt;if(it.ignT<=0)it.ign=null}
+   for(const p of G.planets){if(p===it.ign||p.dead||p.remote)continue;if(Math.hypot(it.x-p.x,it.y-p.y)<=R+12+it.r){it.state='in';it.fade=null;impact(it,p);break}}}
  }
  G.items=G.items.filter(i=>i.state!=='gone'&&(i.walls||i.toSun||(i.x>-220&&i.x<W+220&&i.y>-220&&i.y<H+220)));
  fx(dt);
@@ -506,7 +509,7 @@ function hud(){
 }
 
 // ---- networking: the host runs the game and sends snapshots; others send their own planet ----
-const NET={ws:null,id:null,slot:0,hostId:null,players:[],code:'',snaps:[],sendT:0,inT:0,leaving:false};
+const NET={claimed:new Set(),ws:null,id:null,slot:0,hostId:null,players:[],code:'',snaps:[],sendT:0,inT:0,leaving:false};
 const isHost=()=>NET.id&&NET.id===NET.hostId;
 function send(m){if(NET.ws&&NET.ws.readyState===1)NET.ws.send(JSON.stringify(m))}
 function snapshot(){
@@ -546,6 +549,14 @@ function interpolate(){
  G.items=b.m.its.map(r=>{const o=prev.get(r[0])||r,st=STN[r[8]];
   return {id:r[0],kind:KN[r[1]],icon:r[2],x:lerp(o[3],r[3]),y:lerp(o[4],r[4]),vx:r[5],vy:r[6],r:r[7],state:st,fade:st==='out'?r[9]:null,from:r[10]?true:null,ign:r[11]>=0?G.planets[r[11]]:null,label:r[12],negotiated:!!r[13]}});
 }
+// A player's own screen decides when something touches their planet; the host applies it.
+function onHit(m){
+ if(MODE!=='host'||!G)return;const p=G.planets[m.slot];if(!p||!p.remote||p.dead)return;
+ const it=G.items.find(i=>i.id===m.id);if(!it||!(it.state==='in'||it.state==='out')||it.ign===p)return;
+ if([m.a,m.x,m.y,m.rot].every(Number.isFinite)){p.x=clamp(m.x,0,W);p.y=clamp(m.y,0,H);p.rot=m.rot;const d=R+12+it.r;it.x=p.x+Math.cos(m.a)*d;it.y=p.y+Math.sin(m.a)*d}
+ if(it.state==='out'){it.state='in';it.fade=null}
+ impact(it,p);
+}
 function onInput(m){
  if(MODE!=='host'||!G)return;const p=G.planets[m.slot];if(!p||!p.remote||p.dead)return;
  if([m.x,m.y,m.rot].every(Number.isFinite)){p.x=clamp(m.x,0,W);p.y=clamp(m.y,0,H);p.rot=m.rot;p.tx=p.x;p.ty=p.y}
@@ -573,6 +584,7 @@ function onNet(m){
  else if(m.t==='start'){if(isHost())return;MODE='client';resize();newGame(m.roster,NET.slot);NET.snaps=[];hideAll();requestAnimationFrame(t=>{G.last=t;requestAnimationFrame(clientLoop)})}
  else if(m.t==='state')onState(m);
  else if(m.t==='input')onInput(m);
+ else if(m.t==='hit')onHit(m);
  else if(m.t==='end'){if(MODE!=='client'||!G)return;G.over=true;renderEnd(m.sum,NET.slot)}
 }
 function startRoomSeason(){
@@ -597,6 +609,8 @@ function clientLoop(now){
  const dt=Math.min(0.05,(now-G.last)/1000);G.last=now;
  interpolate();controlMe(dt);stepToward(G.me,dt);constrain(p=>p===G.me);fx(dt);if(G.me.dead){draw();hud();requestAnimationFrame(clientLoop);return}
  const me=G.me;if(me.energy<3.5&&!G.tiredNote){G.tiredNote=true;note('Running on empty. Moving and turning get harder.','#f2cc8f')}if(me.energy>=5)G.tiredNote=false;
+ for(const it of G.items){if(!(it.state==='in'||it.state==='out')||it.ign===me||NET.claimed.has(it.id))continue;
+  if(Math.hypot(it.x-me.x,it.y-me.y)<=R+12+it.r){const id=it.id;NET.claimed.add(id);setTimeout(()=>NET.claimed.delete(id),400);send({t:'hit',id,a:r3(Math.atan2(it.y-me.y,it.x-me.x)),x:r1(me.x),y:r1(me.y),rot:r3(me.rot)})}}
  NET.inT-=dt;if(NET.inT<=0){NET.inT=1/15;send({t:'input',x:r1(me.x),y:r1(me.y),rot:r3(me.rot)})}
  draw();hud();requestAnimationFrame(clientLoop);
 }

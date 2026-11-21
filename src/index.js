@@ -112,6 +112,13 @@ export class Room extends DurableObject {
       }
       return;
     }
+    // A player reports something touching their own planet; the host decides what it does.
+    if (m.t === "hit") {
+      if (host && host !== ws) {
+        safeSend(host, JSON.stringify({ t: "hit", slot: me.slot, id: m.id, a: m.a, x: m.x, y: m.y, rot: m.rot }));
+      }
+      return;
+    }
 
     // Everything else comes from the host and goes to everyone else.
     if (ws !== host) return;
